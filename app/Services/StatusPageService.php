@@ -97,7 +97,7 @@ class StatusPageService
                 'opened_at' => $incident->opened_at->toIso8601String(),
                 'closed_at' => $incident->closed_at?->toIso8601String(),
             ])->values()->all(),
-            'updated_at' => $monitors->max('last_checked_at'),
+            'updated_at' => $monitors->max('last_checked_at')?->toIso8601String(),
         ];
     }
 
