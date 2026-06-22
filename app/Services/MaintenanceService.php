@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MaintenanceWindow;
 use App\Models\Monitor;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as BaseCollection;
 
 class MaintenanceService
 {
@@ -32,11 +33,20 @@ class MaintenanceService
     /**
      * @return Collection<int, MaintenanceWindow>
      */
-    public function publicActiveOrUpcoming()
+    /**
+     * @param  Collection<int, int>  $monitorIds
+     * @return Collection<int, MaintenanceWindow>
+     */
+    public function publicActiveOrUpcomingForMonitors(BaseCollection $monitorIds)
     {
+        if ($monitorIds->isEmpty()) {
+            return new Collection;
+        }
+
         return MaintenanceWindow::query()
             ->where('public_visible', true)
             ->where('ends_at', '>=', now())
+            ->whereHas('monitors', fn ($query) => $query->whereIn('monitors.id', $monitorIds))
             ->with('monitors')
             ->orderBy('starts_at')
             ->get();

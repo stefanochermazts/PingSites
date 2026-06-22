@@ -5,5 +5,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/status');
 
-Route::get('/status', [StatusPageController::class, 'index'])->name('status');
-Route::get('/status/monitors/{monitor}', [StatusPageController::class, 'show'])->name('status.monitor');
+Route::get('/status', [StatusPageController::class, 'redirectToDefault'])->name('status');
+Route::get('/status/{statusPage:slug}', [StatusPageController::class, 'show'])->name('status.show');
+Route::get('/status/{statusPage:slug}/monitors/{monitor}', [StatusPageController::class, 'monitorShow'])->name('status.monitor');

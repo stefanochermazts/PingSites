@@ -13,8 +13,8 @@ class Incident extends Model
 {
     protected static function booted(): void
     {
-        static::saved(fn () => StatusPageService::forgetCache());
-        static::deleted(fn () => StatusPageService::forgetCache());
+        static::saved(fn () => StatusPageService::forgetAllCaches());
+        static::deleted(fn () => StatusPageService::forgetAllCaches());
     }
 
     protected $fillable = [

@@ -53,11 +53,24 @@ class IncidentManager
 
     public function processManualCheck(Monitor $monitor, CheckResult $result): Check
     {
-        $check = $this->storeCheck($monitor, $result, isManual: true);
-        $this->updateMonitorSnapshot($monitor, $result, $check->checked_at);
-        $monitor->save();
+        return DB::transaction(function () use ($monitor, $result) {
+            $monitor = Monitor::query()->lockForUpdate()->findOrFail($monitor->id);
 
-        return $check;
+            $check = $this->storeCheck($monitor, $result, isManual: true);
+            $this->updateMonitorSnapshot($monitor, $result, $check->checked_at);
+
+            if (! $monitor->isPaused() && ! $this->maintenanceService->isMonitorInMaintenance($monitor)) {
+                if ($result->success && ! $monitor->incidents()->where('status', IncidentStatus::Open)->exists()) {
+                    $monitor->status = MonitorStatus::Online;
+                    $monitor->consecutive_failures = 0;
+                    $monitor->consecutive_successes++;
+                }
+            }
+
+            $monitor->save();
+
+            return $check;
+        });
     }
 
     private function storeCheck(Monitor $monitor, CheckResult $result, bool $isManual): Check

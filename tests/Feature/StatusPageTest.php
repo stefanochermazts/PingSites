@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\MonitorStatus;
 use App\Models\Check;
 use App\Models\Monitor;
+use App\Models\StatusPage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -20,21 +21,46 @@ class StatusPageTest extends TestCase
         $this->seedMonitorSettings();
     }
 
+    private function defaultStatusPage(): StatusPage
+    {
+        return StatusPage::query()->where('is_default', true)->firstOrFail();
+    }
+
+    public function test_status_page_redirects_to_default_slug(): void
+    {
+        $default = $this->defaultStatusPage();
+
+        $this->get('/status')
+            ->assertRedirect(route('status.show', $default));
+    }
+
     public function test_status_page_is_publicly_accessible(): void
     {
-        $response = $this->get('/status');
+        $default = $this->defaultStatusPage();
+
+        $response = $this->get(route('status.show', $default));
 
         $response->assertOk();
         $response->assertSee('Devisia Status');
     }
 
-    public function test_status_page_lists_multiple_published_monitors_with_cache(): void
+    public function test_status_page_lists_monitors_for_selected_page_only(): void
     {
+        $default = $this->defaultStatusPage();
+
+        $clientPage = StatusPage::query()->create([
+            'name' => 'Clienti',
+            'title' => 'Client Status',
+            'slug' => 'clienti',
+            'is_default' => false,
+        ]);
+
         Monitor::query()->create([
             'name' => 'Sito A',
             'url' => 'https://example.com',
             'status' => MonitorStatus::Online,
             'published' => true,
+            'status_page_id' => $default->id,
             'public_name' => 'Sito A',
             'valid_status_codes' => [200],
         ]);
@@ -44,30 +70,34 @@ class StatusPageTest extends TestCase
             'url' => 'https://example.org',
             'status' => MonitorStatus::Online,
             'published' => true,
+            'status_page_id' => $clientPage->id,
             'public_name' => 'Sito B',
             'valid_status_codes' => [200],
         ]);
 
         Cache::flush();
 
-        $first = $this->get('/status');
-        $first->assertOk();
-        $first->assertSee('Sito A');
-        $first->assertSee('Sito B');
+        $this->get(route('status.show', $default))
+            ->assertOk()
+            ->assertSee('Sito A')
+            ->assertDontSee('Sito B');
 
-        $second = $this->get('/status');
-        $second->assertOk();
-        $second->assertSee('Sito A');
-        $second->assertSee('Sito B');
+        $this->get(route('status.show', $clientPage))
+            ->assertOk()
+            ->assertSee('Sito B')
+            ->assertDontSee('Sito A');
     }
 
     public function test_monitor_detail_page_shows_recent_checks(): void
     {
+        $statusPage = $this->defaultStatusPage();
+
         $monitor = Monitor::query()->create([
             'name' => 'Sito A',
             'url' => 'https://example.com',
             'status' => MonitorStatus::Online,
             'published' => true,
+            'status_page_id' => $statusPage->id,
             'public_name' => 'Sito A',
             'valid_status_codes' => [200],
             'last_checked_at' => now(),
@@ -84,7 +114,7 @@ class StatusPageTest extends TestCase
 
         Cache::flush();
 
-        $response = $this->get(route('status.monitor', $monitor));
+        $response = $this->get(route('status.monitor', [$statusPage, $monitor]));
 
         $response->assertOk();
         $response->assertSee('Sito A');
@@ -93,8 +123,33 @@ class StatusPageTest extends TestCase
         $response->assertDontSee('dns_error');
     }
 
+    public function test_monitor_on_other_status_page_returns_not_found(): void
+    {
+        $default = $this->defaultStatusPage();
+
+        $clientPage = StatusPage::query()->create([
+            'name' => 'Clienti',
+            'title' => 'Client Status',
+            'slug' => 'clienti',
+            'is_default' => false,
+        ]);
+
+        $monitor = Monitor::query()->create([
+            'name' => 'Sito B',
+            'url' => 'https://example.org',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $clientPage->id,
+            'valid_status_codes' => [200],
+        ]);
+
+        $this->get(route('status.monitor', [$default, $monitor]))->assertNotFound();
+    }
+
     public function test_unpublished_monitor_detail_returns_not_found(): void
     {
+        $statusPage = $this->defaultStatusPage();
+
         $monitor = Monitor::query()->create([
             'name' => 'Interno',
             'url' => 'https://example.com',
@@ -103,7 +158,7 @@ class StatusPageTest extends TestCase
             'valid_status_codes' => [200],
         ]);
 
-        $this->get(route('status.monitor', $monitor))->assertNotFound();
+        $this->get(route('status.monitor', [$statusPage, $monitor]))->assertNotFound();
     }
 
     public function test_admin_panel_requires_authentication(): void

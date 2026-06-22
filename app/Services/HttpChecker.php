@@ -61,7 +61,7 @@ class HttpChecker
                 return CheckResult::failure(ErrorType::EmptyResponse, 'Risposta vuota.', $statusCode, $responseTimeMs);
             }
 
-            $validCodes = $monitor->valid_status_codes ?? [200, 301, 302];
+            $validCodes = array_map('intval', $monitor->valid_status_codes ?? [200, 301, 302]);
 
             if (! in_array($statusCode, $validCodes, true)) {
                 $errorType = $this->classifyHttpCode($statusCode);

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Monitors\Schemas;
 
 use App\Rules\PublicMonitorUrl;
 use App\Settings\MonitorSettings;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -37,7 +38,15 @@ class MonitorForm
                             ->default(true),
                         Toggle::make('published')
                             ->label('Pubblicato in status page')
+                            ->live()
                             ->default(false),
+                        Select::make('status_page_id')
+                            ->label('Status page')
+                            ->relationship('statusPage', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required(fn (callable $get): bool => (bool) $get('published'))
+                            ->visible(fn (callable $get): bool => (bool) $get('published')),
                         TextInput::make('public_name')
                             ->label('Nome pubblico')
                             ->maxLength(255),

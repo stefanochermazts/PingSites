@@ -45,7 +45,6 @@ class Settings extends Page
         $settings = app(MonitorSettings::class);
 
         $this->form->fill([
-            'status_page_title' => $settings->status_page_title,
             'alert_recipients' => $settings->alert_recipients,
             'mail_from_address' => $settings->mail_from_address,
             'mail_from_name' => $settings->mail_from_name,
@@ -65,12 +64,6 @@ class Settings extends Page
         return $schema
             ->components([
                 Form::make([
-                    Section::make('Status page')
-                        ->schema([
-                            TextInput::make('status_page_title')
-                                ->label('Titolo status page')
-                                ->required(),
-                        ]),
                     Section::make('Email alert')
                         ->columns(2)
                         ->schema([

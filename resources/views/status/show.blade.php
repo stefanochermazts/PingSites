@@ -11,7 +11,7 @@
 <div class="min-h-screen">
     <header class="border-b border-slate-200 bg-white">
         <div class="mx-auto max-w-5xl px-4 py-8">
-            <a href="{{ route('status') }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">&larr; Torna alla status page</a>
+            <a href="{{ route('status.show', $status_page['slug']) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">&larr; Torna alla status page</a>
             <div class="mt-4 flex flex-wrap items-center gap-4">
                 <h1 class="text-3xl font-bold">{{ $monitor['name'] }}</h1>
                 @include('status.partials.status-badge', [

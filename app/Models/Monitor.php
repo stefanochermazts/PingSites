@@ -6,6 +6,7 @@ use App\Enums\ErrorType;
 use App\Enums\MonitorStatus;
 use App\Services\StatusPageService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -14,8 +15,8 @@ class Monitor extends Model
 {
     protected static function booted(): void
     {
-        static::saved(fn (Monitor $monitor) => StatusPageService::forgetCache($monitor));
-        static::deleted(fn (Monitor $monitor) => StatusPageService::forgetCache($monitor));
+        static::saved(fn (Monitor $monitor) => StatusPageService::forgetAllCaches($monitor));
+        static::deleted(fn (Monitor $monitor) => StatusPageService::forgetAllCaches($monitor));
     }
 
     protected $fillable = [
@@ -32,6 +33,7 @@ class Monitor extends Model
         'failure_threshold',
         'recovery_threshold',
         'published',
+        'status_page_id',
         'public_name',
         'internal_notes',
         'consecutive_failures',
@@ -56,6 +58,11 @@ class Monitor extends Model
             'next_check_at' => 'datetime',
             'last_error_type' => ErrorType::class,
         ];
+    }
+
+    public function statusPage(): BelongsTo
+    {
+        return $this->belongsTo(StatusPage::class);
     }
 
     public function checks(): HasMany

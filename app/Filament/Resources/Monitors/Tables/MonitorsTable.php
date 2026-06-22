@@ -54,8 +54,12 @@ class MonitorsTable
                     ->label('Prossimo controllo')
                     ->dateTime('d/m/Y H:i')
                     ->sortable(),
-                IconColumn::make('published')
+                TextColumn::make('statusPage.name')
                     ->label('Status page')
+                    ->placeholder('-')
+                    ->toggleable(),
+                IconColumn::make('published')
+                    ->label('Pubblicato')
                     ->boolean(),
             ])
             ->filters([

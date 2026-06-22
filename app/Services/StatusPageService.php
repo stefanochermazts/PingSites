@@ -7,7 +7,7 @@ use App\Enums\MonitorStatus;
 use App\Models\Check;
 use App\Models\Incident;
 use App\Models\Monitor;
-use App\Settings\MonitorSettings;
+use App\Models\StatusPage;
 use Illuminate\Support\Collection;
 
 class StatusPageService
@@ -15,33 +15,40 @@ class StatusPageService
     private const RECENT_CHECKS_LIMIT = 30;
 
     public function __construct(
-        private readonly MonitorSettings $settings,
         private readonly MaintenanceService $maintenanceService,
     ) {}
 
-    public function data(): array
+    public function defaultPage(): StatusPage
     {
-        $monitors = Monitor::query()
-            ->where('published', true)
-            ->orderBy('public_name')
-            ->orderBy('name')
-            ->get();
+        return StatusPage::query()
+            ->where('is_default', true)
+            ->firstOrFail();
+    }
+
+    public function data(StatusPage $statusPage): array
+    {
+        $monitors = $this->publishedMonitorsForPage($statusPage);
 
         $recentChecksByMonitor = $this->recentChecksForMonitors($monitors->pluck('id'));
+        $monitorIds = $monitors->pluck('id');
 
         $openIncidents = Incident::query()
             ->where('status', IncidentStatus::Open)
             ->where('public_visible', true)
-            ->whereHas('monitor', fn ($query) => $query->where('published', true))
+            ->whereHas('monitor', fn ($query) => $query
+                ->where('published', true)
+                ->where('status_page_id', $statusPage->id))
             ->with('monitor')
             ->orderByDesc('opened_at')
             ->get();
 
-        $maintenances = $this->maintenanceService->publicActiveOrUpcoming();
+        $maintenances = $this->maintenanceService->publicActiveOrUpcomingForMonitors($monitorIds);
 
         $recentIncidents = Incident::query()
             ->where('public_visible', true)
-            ->whereHas('monitor', fn ($query) => $query->where('published', true))
+            ->whereHas('monitor', fn ($query) => $query
+                ->where('published', true)
+                ->where('status_page_id', $statusPage->id))
             ->where('opened_at', '>=', now()->subDays(30))
             ->with('monitor')
             ->orderByDesc('opened_at')
@@ -49,7 +56,11 @@ class StatusPageService
             ->get();
 
         return [
-            'title' => $this->settings->status_page_title,
+            'status_page' => [
+                'slug' => $statusPage->slug,
+                'name' => $statusPage->name,
+            ],
+            'title' => $statusPage->title,
             'overall_status' => $this->overallStatus($monitors, $maintenances),
             'overall_status_label' => $this->overallStatusLabel($monitors, $maintenances),
             'monitors' => $monitors->map(function (Monitor $monitor) use ($recentChecksByMonitor) {
@@ -86,13 +97,13 @@ class StatusPageService
                 'opened_at' => $incident->opened_at->toIso8601String(),
                 'closed_at' => $incident->closed_at?->toIso8601String(),
             ])->values()->all(),
-            'updated_at' => Monitor::query()->where('published', true)->max('last_checked_at'),
+            'updated_at' => $monitors->max('last_checked_at'),
         ];
     }
 
-    public function monitorDetail(Monitor $monitor): array
+    public function monitorDetail(StatusPage $statusPage, Monitor $monitor): array
     {
-        abort_unless($monitor->published, 404);
+        abort_unless($this->monitorBelongsToPage($monitor, $statusPage), 404);
 
         $checks = Check::query()
             ->where('monitor_id', $monitor->id)
@@ -104,7 +115,11 @@ class StatusPageService
         $chartChecks = $checks->reverse()->values();
 
         return [
-            'title' => $this->settings->status_page_title,
+            'status_page' => [
+                'slug' => $statusPage->slug,
+                'name' => $statusPage->name,
+            ],
+            'title' => $statusPage->title,
             'monitor' => [
                 'id' => $monitor->id,
                 'name' => $monitor->displayPublicName(),
@@ -123,23 +138,44 @@ class StatusPageService
         ];
     }
 
-    public static function cacheKey(): string
+    public function monitorBelongsToPage(Monitor $monitor, StatusPage $statusPage): bool
     {
-        return 'status-page';
+        return $monitor->published
+            && $monitor->status_page_id === $statusPage->id;
     }
 
-    public static function monitorCacheKey(Monitor $monitor): string
+    public static function cacheKey(StatusPage $statusPage): string
     {
-        return 'status-page-monitor-'.$monitor->id;
+        return 'status-page-'.$statusPage->slug;
     }
 
-    public static function forgetCache(?Monitor $monitor = null): void
+    public static function monitorCacheKey(StatusPage $statusPage, Monitor $monitor): string
     {
-        cache()->forget(self::cacheKey());
+        return 'status-page-'.$statusPage->slug.'-monitor-'.$monitor->id;
+    }
 
-        if ($monitor) {
-            cache()->forget(self::monitorCacheKey($monitor));
-        }
+    public static function forgetAllCaches(?Monitor $monitor = null): void
+    {
+        StatusPage::query()->each(function (StatusPage $statusPage) use ($monitor): void {
+            cache()->forget(self::cacheKey($statusPage));
+
+            if ($monitor) {
+                cache()->forget(self::monitorCacheKey($statusPage, $monitor));
+            }
+        });
+    }
+
+    /**
+     * @return Collection<int, Monitor>
+     */
+    private function publishedMonitorsForPage(StatusPage $statusPage): Collection
+    {
+        return Monitor::query()
+            ->where('published', true)
+            ->where('status_page_id', $statusPage->id)
+            ->orderBy('public_name')
+            ->orderBy('name')
+            ->get();
     }
 
     /**
@@ -236,8 +272,17 @@ class StatusPageService
             MonitorStatus::Down => 'down',
             MonitorStatus::Maintenance => 'maintenance',
             MonitorStatus::Online => 'operational',
-            default => 'unknown',
+            MonitorStatus::Unknown, MonitorStatus::Paused => $this->inferredPublicStatus($monitor),
         };
+    }
+
+    private function inferredPublicStatus(Monitor $monitor): string
+    {
+        if ($monitor->last_checked_at && $monitor->last_error_type === null) {
+            return 'operational';
+        }
+
+        return 'unknown';
     }
 
     private function publicMonitorStatusLabel(Monitor $monitor): string

@@ -78,7 +78,7 @@
                                     @endif
                                 </td>
                                 <td class="py-4 text-right">
-                                    <a href="{{ route('status.monitor', $monitor['id']) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                                    <a href="{{ route('status.monitor', [$status_page['slug'], $monitor['id']]) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
                                         Dettaglio
                                     </a>
                                 </td>

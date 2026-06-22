@@ -6,7 +6,9 @@ use App\DTOs\CheckResult;
 use App\Enums\ErrorType;
 use App\Enums\MonitorStatus;
 use App\Models\Monitor;
+use App\Models\StatusPage;
 use App\Services\IncidentManager;
+use App\Services\StatusPageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -47,6 +49,49 @@ class IncidentManagerTest extends TestCase
         $this->assertEquals(MonitorStatus::Down, $monitor->fresh()->status);
     }
 
+    public function test_successful_automatic_check_sets_unknown_monitor_online(): void
+    {
+        Queue::fake();
+
+        $monitor = Monitor::query()->create([
+            'name' => 'Test',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Unknown,
+            'failure_threshold' => 2,
+            'recovery_threshold' => 2,
+            'valid_status_codes' => [200],
+        ]);
+
+        $manager = app(IncidentManager::class);
+        $success = CheckResult::success(200, 150);
+
+        $manager->processAutomaticCheck($monitor, $success);
+
+        $monitor->refresh();
+        $this->assertSame(MonitorStatus::Online, $monitor->status);
+        $this->assertNull($monitor->last_error_type);
+    }
+
+    public function test_successful_manual_check_sets_unknown_monitor_online(): void
+    {
+        $monitor = Monitor::query()->create([
+            'name' => 'Test',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Unknown,
+            'failure_threshold' => 2,
+            'recovery_threshold' => 2,
+            'valid_status_codes' => [200],
+        ]);
+
+        $manager = app(IncidentManager::class);
+        $success = CheckResult::success(200, 150);
+
+        $manager->processManualCheck($monitor, $success);
+
+        $monitor->refresh();
+        $this->assertSame(MonitorStatus::Online, $monitor->status);
+    }
+
     public function test_manual_check_does_not_open_incident(): void
     {
         $monitor = Monitor::query()->create([
@@ -65,5 +110,29 @@ class IncidentManagerTest extends TestCase
         $manager->processManualCheck($monitor->fresh(), $failure);
 
         $this->assertDatabaseCount('incidents', 0);
+    }
+
+    public function test_status_page_shows_operational_when_last_check_succeeded_but_status_unknown(): void
+    {
+        $statusPage = StatusPage::query()->where('is_default', true)->firstOrFail();
+
+        Monitor::query()->create([
+            'name' => 'Sito A',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Unknown,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito A',
+            'valid_status_codes' => [200],
+            'last_checked_at' => now(),
+            'last_http_code' => 200,
+            'last_response_time_ms' => 120,
+            'last_error_type' => null,
+        ]);
+
+        $data = app(StatusPageService::class)->data($statusPage);
+
+        $this->assertSame('operational', $data['monitors'][0]['status']);
+        $this->assertSame('Operativo', $data['monitors'][0]['status_label']);
     }
 }
