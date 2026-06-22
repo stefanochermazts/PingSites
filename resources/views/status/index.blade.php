@@ -9,7 +9,7 @@
 <body class="bg-slate-50 text-slate-900">
 <div class="min-h-screen">
     <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto max-w-4xl px-4 py-8">
+        <div class="mx-auto max-w-5xl px-4 py-8">
             <h1 class="text-3xl font-bold">{{ $title }}</h1>
             <p class="mt-2 text-lg @class([
                 'text-emerald-600' => $overall_status === 'operational',
@@ -23,25 +23,75 @@
         </div>
     </header>
 
-    <main class="mx-auto max-w-4xl space-y-8 px-4 py-8">
+    <main class="mx-auto max-w-5xl space-y-8 px-4 py-8">
         <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 text-xl font-semibold">Servizi</h2>
-            <ul class="divide-y divide-slate-100">
-                @forelse($monitors as $monitor)
-                    <li class="flex items-center justify-between py-3">
-                        <span class="font-medium">{{ $monitor['name'] }}</span>
-                        <span @class([
-                            'rounded-full px-3 py-1 text-sm font-medium',
-                            'bg-emerald-100 text-emerald-700' => $monitor['status'] === 'operational',
-                            'bg-amber-100 text-amber-700' => $monitor['status'] === 'maintenance',
-                            'bg-red-100 text-red-700' => $monitor['status'] === 'down',
-                            'bg-slate-100 text-slate-600' => $monitor['status'] === 'unknown',
-                        ])>{{ $monitor['status_label'] }}</span>
-                    </li>
-                @empty
-                    <li class="py-3 text-slate-500">Nessun servizio pubblicato.</li>
-                @endforelse
-            </ul>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500">
+                            <th class="pb-3 pr-4 font-medium">Servizio</th>
+                            <th class="pb-3 pr-4 font-medium">Stato</th>
+                            <th class="hidden pb-3 pr-4 font-medium sm:table-cell">Ultimo controllo</th>
+                            <th class="hidden pb-3 pr-4 font-medium md:table-cell">Risposta</th>
+                            <th class="hidden pb-3 pr-4 font-medium lg:table-cell">Disponibilità</th>
+                            <th class="pb-3 font-medium"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse($monitors as $monitor)
+                            <tr class="align-middle">
+                                <td class="py-4 pr-4 font-medium">{{ $monitor['name'] }}</td>
+                                <td class="py-4 pr-4">
+                                    @include('status.partials.status-badge', [
+                                        'status' => $monitor['status'],
+                                        'label' => $monitor['status_label'],
+                                    ])
+                                </td>
+                                <td class="hidden py-4 pr-4 text-slate-600 sm:table-cell">
+                                    @if($monitor['last_checked_at'])
+                                        <span title="{{ \Illuminate\Support\Carbon::parse($monitor['last_checked_at'])->format('d/m/Y H:i:s') }}">
+                                            {{ \Illuminate\Support\Carbon::parse($monitor['last_checked_at'])->diffForHumans() }}
+                                        </span>
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="hidden py-4 pr-4 text-slate-600 md:table-cell">
+                                    @if($monitor['last_response_time_ms'])
+                                        {{ number_format($monitor['last_response_time_ms'], 0, ',', '.') }} ms
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="hidden py-4 pr-4 lg:table-cell">
+                                    @if($monitor['uptime_percent'] !== null)
+                                        <span @class([
+                                            'font-medium',
+                                            'text-emerald-600' => $monitor['uptime_percent'] >= 99,
+                                            'text-amber-600' => $monitor['uptime_percent'] >= 95 && $monitor['uptime_percent'] < 99,
+                                            'text-red-600' => $monitor['uptime_percent'] < 95,
+                                        ])>{{ number_format($monitor['uptime_percent'], 1, ',', '.') }}%</span>
+                                        <span class="text-slate-400"> / {{ $monitor['sample_size'] }} check</span>
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="py-4 text-right">
+                                    <a href="{{ route('status.monitor', $monitor['id']) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                                        Dettaglio
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-4 text-slate-500">Nessun servizio pubblicato.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-4 text-xs text-slate-400">La disponibilità è calcolata sulle ultime 30 esecuzioni per servizio.</p>
         </section>
 
         @if(count($open_incidents) > 0)

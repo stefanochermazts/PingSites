@@ -14,8 +14,8 @@ class Monitor extends Model
 {
     protected static function booted(): void
     {
-        static::saved(fn () => StatusPageService::forgetCache());
-        static::deleted(fn () => StatusPageService::forgetCache());
+        static::saved(fn (Monitor $monitor) => StatusPageService::forgetCache($monitor));
+        static::deleted(fn (Monitor $monitor) => StatusPageService::forgetCache($monitor));
     }
 
     protected $fillable = [

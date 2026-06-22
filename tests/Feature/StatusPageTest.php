@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\MonitorStatus;
+use App\Models\Check;
 use App\Models\Monitor;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,6 +59,51 @@ class StatusPageTest extends TestCase
         $second->assertOk();
         $second->assertSee('Sito A');
         $second->assertSee('Sito B');
+    }
+
+    public function test_monitor_detail_page_shows_recent_checks(): void
+    {
+        $monitor = Monitor::query()->create([
+            'name' => 'Sito A',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'public_name' => 'Sito A',
+            'valid_status_codes' => [200],
+            'last_checked_at' => now(),
+            'last_response_time_ms' => 120,
+        ]);
+
+        Check::query()->create([
+            'monitor_id' => $monitor->id,
+            'success' => true,
+            'http_code' => 200,
+            'response_time_ms' => 120,
+            'checked_at' => now()->subMinute(),
+        ]);
+
+        Cache::flush();
+
+        $response = $this->get(route('status.monitor', $monitor));
+
+        $response->assertOk();
+        $response->assertSee('Sito A');
+        $response->assertSee('Tempi di risposta');
+        $response->assertSee('120 ms');
+        $response->assertDontSee('dns_error');
+    }
+
+    public function test_unpublished_monitor_detail_returns_not_found(): void
+    {
+        $monitor = Monitor::query()->create([
+            'name' => 'Interno',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Online,
+            'published' => false,
+            'valid_status_codes' => [200],
+        ]);
+
+        $this->get(route('status.monitor', $monitor))->assertNotFound();
     }
 
     public function test_admin_panel_requires_authentication(): void
