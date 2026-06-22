@@ -51,27 +51,37 @@ class StatusPageService
                 'name' => $monitor->displayPublicName(),
                 'status' => $this->publicMonitorStatus($monitor),
                 'status_label' => $this->publicMonitorStatusLabel($monitor),
-            ]),
+            ])->values()->all(),
             'open_incidents' => $openIncidents->map(fn (Incident $incident) => [
                 'name' => $incident->monitor->displayPublicName(),
                 'message' => $incident->publicMessage(),
-                'opened_at' => $incident->opened_at,
-            ]),
+                'opened_at' => $incident->opened_at->toIso8601String(),
+            ])->values()->all(),
             'maintenances' => $maintenances->map(fn ($maintenance) => [
                 'title' => $maintenance->title,
                 'message' => $maintenance->public_message ?: 'Manutenzione programmata.',
-                'starts_at' => $maintenance->starts_at,
-                'ends_at' => $maintenance->ends_at,
+                'starts_at' => $maintenance->starts_at->toIso8601String(),
+                'ends_at' => $maintenance->ends_at->toIso8601String(),
                 'is_active' => $maintenance->isActive(),
-            ]),
+            ])->values()->all(),
             'recent_incidents' => $recentIncidents->map(fn (Incident $incident) => [
                 'name' => $incident->monitor->displayPublicName(),
                 'status' => $incident->status->label(),
-                'opened_at' => $incident->opened_at,
-                'closed_at' => $incident->closed_at,
-            ]),
+                'opened_at' => $incident->opened_at->toIso8601String(),
+                'closed_at' => $incident->closed_at?->toIso8601String(),
+            ])->values()->all(),
             'updated_at' => Monitor::query()->where('published', true)->max('last_checked_at'),
         ];
+    }
+
+    public static function cacheKey(): string
+    {
+        return 'status-page';
+    }
+
+    public static function forgetCache(): void
+    {
+        cache()->forget(self::cacheKey());
     }
 
     private function overallStatus(Collection $monitors, Collection $maintenances): string

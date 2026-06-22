@@ -26,7 +26,7 @@ return new class extends Migration
             $table->foreignId('maintenance_window_id')->constrained()->cascadeOnDelete();
             $table->foreignId('monitor_id')->constrained()->cascadeOnDelete();
 
-            $table->unique(['maintenance_window_id', 'monitor_id']);
+            $table->unique(['maintenance_window_id', 'monitor_id'], 'mw_monitor_unique');
         });
     }
 

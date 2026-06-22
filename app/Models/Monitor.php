@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ErrorType;
 use App\Enums\MonitorStatus;
+use App\Services\StatusPageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Monitor extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(fn () => StatusPageService::forgetCache());
+        static::deleted(fn () => StatusPageService::forgetCache());
+    }
+
     protected $fillable = [
         'name',
         'url',

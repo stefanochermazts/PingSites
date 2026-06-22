@@ -4,12 +4,19 @@ namespace App\Models;
 
 use App\Enums\ErrorType;
 use App\Enums\IncidentStatus;
+use App\Services\StatusPageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Incident extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(fn () => StatusPageService::forgetCache());
+        static::deleted(fn () => StatusPageService::forgetCache());
+    }
+
     protected $fillable = [
         'monitor_id',
         'opened_at',

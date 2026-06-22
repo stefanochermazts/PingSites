@@ -10,7 +10,7 @@ class StatusPageController extends Controller
 {
     public function __invoke(StatusPageService $statusPageService): View
     {
-        $data = Cache::remember('status-page', 60, fn () => $statusPageService->data());
+        $data = Cache::remember(StatusPageService::cacheKey(), 60, fn () => $statusPageService->data());
 
         return view('status.index', $data);
     }

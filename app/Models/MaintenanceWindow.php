@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Services\StatusPageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class MaintenanceWindow extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(fn () => StatusPageService::forgetCache());
+        static::deleted(fn () => StatusPageService::forgetCache());
+    }
+
     protected $fillable = [
         'title',
         'starts_at',

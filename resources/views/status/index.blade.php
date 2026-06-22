@@ -44,7 +44,7 @@
             </ul>
         </section>
 
-        @if($open_incidents->isNotEmpty())
+        @if(count($open_incidents) > 0)
             <section class="rounded-xl border border-red-200 bg-red-50 p-6">
                 <h2 class="mb-4 text-xl font-semibold text-red-800">Incidenti attivi</h2>
                 <ul class="space-y-4">
@@ -58,7 +58,7 @@
             </section>
         @endif
 
-        @if($maintenances->isNotEmpty())
+        @if(count($maintenances) > 0)
             <section class="rounded-xl border border-amber-200 bg-amber-50 p-6">
                 <h2 class="mb-4 text-xl font-semibold text-amber-900">Manutenzioni</h2>
                 <ul class="space-y-4">
@@ -67,8 +67,8 @@
                             <p class="font-medium text-amber-900">{{ $maintenance['title'] }}</p>
                             <p class="text-amber-800">{{ $maintenance['message'] }}</p>
                             <p class="text-sm text-amber-700">
-                                {{ $maintenance['starts_at']->format('d/m/Y H:i') }} -
-                                {{ $maintenance['ends_at']->format('d/m/Y H:i') }}
+                                {{ \Illuminate\Support\Carbon::parse($maintenance['starts_at'])->format('d/m/Y H:i') }} -
+                                {{ \Illuminate\Support\Carbon::parse($maintenance['ends_at'])->format('d/m/Y H:i') }}
                                 @if($maintenance['is_active']) (in corso) @endif
                             </p>
                         </li>
@@ -77,7 +77,7 @@
             </section>
         @endif
 
-        @if($recent_incidents->isNotEmpty())
+        @if(count($recent_incidents) > 0)
             <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 class="mb-4 text-xl font-semibold">Storico recente incidenti</h2>
                 <ul class="divide-y divide-slate-100">
@@ -88,9 +88,9 @@
                                 <span class="text-sm text-slate-500">{{ $incident['status'] }}</span>
                             </div>
                             <p class="text-sm text-slate-500">
-                                {{ $incident['opened_at']->format('d/m/Y H:i') }}
+                                {{ \Illuminate\Support\Carbon::parse($incident['opened_at'])->format('d/m/Y H:i') }}
                                 @if($incident['closed_at'])
-                                    - {{ $incident['closed_at']->format('d/m/Y H:i') }}
+                                    - {{ \Illuminate\Support\Carbon::parse($incident['closed_at'])->format('d/m/Y H:i') }}
                                 @endif
                             </p>
                         </li>
