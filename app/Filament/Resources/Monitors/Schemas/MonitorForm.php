@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Monitors\Schemas;
 
-use App\Enums\MonitorStatus;
 use App\Rules\PublicMonitorUrl;
 use App\Settings\MonitorSettings;
 use Filament\Forms\Components\TagsInput;

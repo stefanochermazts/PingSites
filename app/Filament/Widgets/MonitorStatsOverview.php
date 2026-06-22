@@ -9,6 +9,7 @@ use App\Models\Incident;
 use App\Models\Monitor;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Carbon;
 
 class MonitorStatsOverview extends StatsOverviewWidget
 {
@@ -29,7 +30,7 @@ class MonitorStatsOverview extends StatsOverviewWidget
             Stat::make('Manutenzione', (string) $maintenance)->color('warning'),
             Stat::make('Sospesi', (string) $paused),
             Stat::make('Incidenti aperti', (string) $openIncidents)->color($openIncidents > 0 ? 'danger' : 'success'),
-            Stat::make('Ultimo controllo', $lastCheck ? \Illuminate\Support\Carbon::parse($lastCheck)->format('d/m/Y H:i') : 'N/D'),
+            Stat::make('Ultimo controllo', $lastCheck ? Carbon::parse($lastCheck)->format('d/m/Y H:i') : 'N/D'),
         ];
     }
 }

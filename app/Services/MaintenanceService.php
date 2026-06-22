@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MaintenanceWindow;
 use App\Models\Monitor;
+use Illuminate\Database\Eloquent\Collection;
 
 class MaintenanceService
 {
@@ -17,7 +18,7 @@ class MaintenanceService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, MaintenanceWindow>
+     * @return Collection<int, MaintenanceWindow>
      */
     public function activeForMonitor(Monitor $monitor)
     {
@@ -29,7 +30,7 @@ class MaintenanceService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, MaintenanceWindow>
+     * @return Collection<int, MaintenanceWindow>
      */
     public function publicActiveOrUpcoming()
     {

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Incidents\Pages;
 
 use App\Filament\Resources\Incidents\IncidentResource;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class ViewIncident extends ViewRecord
 {
@@ -14,7 +15,7 @@ class ViewIncident extends ViewRecord
         return $data;
     }
 
-    public function getRecord(): \Illuminate\Database\Eloquent\Model
+    public function getRecord(): Model
     {
         return parent::getRecord()->load('events', 'monitor');
     }

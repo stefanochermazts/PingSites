@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 
@@ -88,7 +89,7 @@ class SsrfGuard
     /**
      * @param  callable(string): void  $onRedirect
      */
-    public function createHttpClient(int $timeout, bool $followRedirects, bool $verifySsl, string $userAgent, callable $onRedirect): \Illuminate\Http\Client\PendingRequest
+    public function createHttpClient(int $timeout, bool $followRedirects, bool $verifySsl, string $userAgent, callable $onRedirect): PendingRequest
     {
         $maxRedirects = $followRedirects ? 5 : 0;
 

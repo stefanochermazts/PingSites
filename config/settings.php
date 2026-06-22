@@ -1,7 +1,9 @@
 <?php
 
+use App\Settings\MonitorSettings;
+
 return [
     'settings' => [
-        App\Settings\MonitorSettings::class,
+        MonitorSettings::class,
     ],
 ];

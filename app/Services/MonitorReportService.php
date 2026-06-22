@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Check;
 use App\Models\Incident;
 use App\Models\Monitor;
-use Illuminate\Support\Carbon;
 
 class MonitorReportService
 {
