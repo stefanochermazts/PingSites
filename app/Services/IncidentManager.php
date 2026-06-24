@@ -63,7 +63,7 @@ class IncidentManager
                 if ($result->success && ! $monitor->incidents()->where('status', IncidentStatus::Open)->exists()) {
                     $monitor->status = MonitorStatus::Online;
                     $monitor->consecutive_failures = 0;
-                    $monitor->consecutive_successes++;
+                    $monitor->consecutive_successes = $this->incrementCounter($monitor->consecutive_successes);
                 }
             }
 
@@ -97,7 +97,7 @@ class IncidentManager
     private function handleSuccess(Monitor $monitor, CheckResult $result, Check $check): void
     {
         $monitor->consecutive_failures = 0;
-        $monitor->consecutive_successes++;
+        $monitor->consecutive_successes = $this->incrementCounter($monitor->consecutive_successes);
 
         $openIncident = $monitor->incidents()->where('status', IncidentStatus::Open)->first();
 
@@ -119,13 +119,12 @@ class IncidentManager
     private function handleFailure(Monitor $monitor, CheckResult $result, Check $check): void
     {
         $monitor->consecutive_successes = 0;
-        $monitor->consecutive_failures++;
 
         $openIncident = $monitor->incidents()->where('status', IncidentStatus::Open)->first();
 
         if ($openIncident) {
             $openIncident->last_error_type = $result->errorType;
-            $openIncident->failed_checks_count = $monitor->consecutive_failures;
+            $openIncident->failed_checks_count++;
             $openIncident->save();
 
             $this->recordIncidentEvent(
@@ -135,9 +134,12 @@ class IncidentManager
             );
 
             $monitor->status = MonitorStatus::Down;
+            $monitor->consecutive_failures = min($monitor->consecutive_failures, $monitor->failure_threshold);
 
             return;
         }
+
+        $monitor->consecutive_failures = $this->incrementCounter($monitor->consecutive_failures);
 
         if ($monitor->consecutive_failures >= $monitor->failure_threshold) {
             $this->openIncident($monitor, $result);
@@ -146,6 +148,11 @@ class IncidentManager
                 ? MonitorStatus::Unknown
                 : MonitorStatus::Online;
         }
+    }
+
+    private function incrementCounter(int $value): int
+    {
+        return min($value + 1, 255);
     }
 
     private function openIncident(Monitor $monitor, CheckResult $result): void
@@ -190,6 +197,7 @@ class IncidentManager
 
         $monitor->status = MonitorStatus::Online;
         $monitor->consecutive_failures = 0;
+        $monitor->consecutive_successes = 0;
 
         SendMonitorRecoveryNotificationJob::dispatch($monitor->id, $incident->id);
     }
