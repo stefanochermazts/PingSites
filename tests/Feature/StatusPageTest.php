@@ -8,6 +8,7 @@ use App\Models\Monitor;
 use App\Models\StatusPage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -121,6 +122,37 @@ class StatusPageTest extends TestCase
         $response->assertSee('Tempi di risposta');
         $response->assertSee('120 ms');
         $response->assertDontSee('dns_error');
+    }
+
+    public function test_monitor_detail_displays_check_time_in_app_timezone(): void
+    {
+        config(['app.timezone' => 'Europe/Rome']);
+
+        $statusPage = $this->defaultStatusPage();
+
+        $monitor = Monitor::query()->create([
+            'name' => 'Sito A',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito A',
+            'valid_status_codes' => [200],
+        ]);
+
+        Check::query()->create([
+            'monitor_id' => $monitor->id,
+            'success' => true,
+            'http_code' => 200,
+            'response_time_ms' => 120,
+            'checked_at' => Carbon::parse('2026-06-26 06:57:06', 'UTC'),
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.monitor', [$statusPage, $monitor]))
+            ->assertOk()
+            ->assertSee('26/06/2026 08:57:06');
     }
 
     public function test_monitor_on_other_status_page_returns_not_found(): void

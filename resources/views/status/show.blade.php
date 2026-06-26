@@ -1,3 +1,4 @@
+@use('App\Support\DisplayDate')
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -21,8 +22,8 @@
             </div>
             @if($monitor['last_checked_at'])
                 <p class="mt-2 text-sm text-slate-500">
-                    Ultimo controllo: {{ \Illuminate\Support\Carbon::parse($monitor['last_checked_at'])->format('d/m/Y H:i') }}
-                    ({{ \Illuminate\Support\Carbon::parse($monitor['last_checked_at'])->diffForHumans() }})
+                    Ultimo controllo: {{ DisplayDate::format($monitor['last_checked_at'], 'd/m/Y H:i') }}
+                    ({{ DisplayDate::parse($monitor['last_checked_at'])?->diffForHumans() }})
                 </p>
             @endif
         </div>
@@ -82,7 +83,7 @@
                         @foreach(array_reverse($checks) as $check)
                             <div
                                 class="flex-1 @if($check['success']) bg-emerald-500 @else bg-red-500 @endif"
-                                title="{{ \Illuminate\Support\Carbon::parse($check['checked_at'])->format('d/m/Y H:i') }} — {{ $check['status_label'] }}"
+                                title="{{ DisplayDate::format($check['checked_at'], 'd/m/Y H:i') }} — {{ $check['status_label'] }}"
                             ></div>
                         @endforeach
                     </div>
@@ -108,7 +109,7 @@
                             @foreach($checks as $check)
                                 <tr>
                                     <td class="py-3 pr-4 text-slate-700">
-                                        {{ \Illuminate\Support\Carbon::parse($check['checked_at'])->format('d/m/Y H:i:s') }}
+                                        {{ DisplayDate::format($check['checked_at'], 'd/m/Y H:i:s') }}
                                     </td>
                                     <td class="py-3 pr-4">
                                         @include('status.partials.status-badge', [

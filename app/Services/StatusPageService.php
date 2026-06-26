@@ -8,6 +8,7 @@ use App\Models\Check;
 use App\Models\Incident;
 use App\Models\Monitor;
 use App\Models\StatusPage;
+use App\Support\DisplayDate;
 use Illuminate\Support\Collection;
 
 class StatusPageService
@@ -72,7 +73,7 @@ class StatusPageService
                     'name' => $monitor->displayPublicName(),
                     'status' => $this->publicMonitorStatus($monitor),
                     'status_label' => $this->publicMonitorStatusLabel($monitor),
-                    'last_checked_at' => $monitor->last_checked_at?->toIso8601String(),
+                    'last_checked_at' => DisplayDate::utcIsoFromModel($monitor, 'last_checked_at'),
                     'last_response_time_ms' => $monitor->last_response_time_ms,
                     'uptime_percent' => $stats['uptime_percent'],
                     'avg_response_time_ms' => $stats['avg_response_time_ms'],
@@ -82,22 +83,25 @@ class StatusPageService
             'open_incidents' => $openIncidents->map(fn (Incident $incident) => [
                 'name' => $incident->monitor->displayPublicName(),
                 'message' => $incident->publicMessage(),
-                'opened_at' => $incident->opened_at->toIso8601String(),
+                'opened_at' => DisplayDate::utcIsoFromModel($incident, 'opened_at'),
             ])->values()->all(),
             'maintenances' => $maintenances->map(fn ($maintenance) => [
                 'title' => $maintenance->title,
                 'message' => $maintenance->public_message ?: 'Manutenzione programmata.',
-                'starts_at' => $maintenance->starts_at->toIso8601String(),
-                'ends_at' => $maintenance->ends_at->toIso8601String(),
+                'starts_at' => DisplayDate::utcIsoFromModel($maintenance, 'starts_at'),
+                'ends_at' => DisplayDate::utcIsoFromModel($maintenance, 'ends_at'),
                 'is_active' => $maintenance->isActive(),
             ])->values()->all(),
             'recent_incidents' => $recentIncidents->map(fn (Incident $incident) => [
                 'name' => $incident->monitor->displayPublicName(),
                 'status' => $incident->status->label(),
-                'opened_at' => $incident->opened_at->toIso8601String(),
-                'closed_at' => $incident->closed_at?->toIso8601String(),
+                'opened_at' => DisplayDate::utcIsoFromModel($incident, 'opened_at'),
+                'closed_at' => DisplayDate::utcIsoFromModel($incident, 'closed_at'),
             ])->values()->all(),
-            'updated_at' => $monitors->max('last_checked_at')?->toIso8601String(),
+            'updated_at' => $monitors
+                ->filter(fn (Monitor $monitor) => $monitor->getRawOriginal('last_checked_at') !== null)
+                ->map(fn (Monitor $monitor) => DisplayDate::utcIsoFromModel($monitor, 'last_checked_at'))
+                ->max(),
         ];
     }
 
@@ -125,13 +129,16 @@ class StatusPageService
                 'name' => $monitor->displayPublicName(),
                 'status' => $this->publicMonitorStatus($monitor),
                 'status_label' => $this->publicMonitorStatusLabel($monitor),
-                'last_checked_at' => $monitor->last_checked_at?->toIso8601String(),
+                'last_checked_at' => DisplayDate::utcIsoFromModel($monitor, 'last_checked_at'),
                 'last_response_time_ms' => $monitor->last_response_time_ms,
             ],
             'stats' => $stats,
             'checks' => $checks->map(fn (Check $check) => $this->publicCheckPayload($check))->values()->all(),
             'chart' => [
-                'labels' => $chartChecks->map(fn (Check $check) => $check->checked_at->format('d/m H:i'))->all(),
+                'labels' => $chartChecks->map(fn (Check $check) => DisplayDate::format(
+                    DisplayDate::utcIsoFromModel($check, 'checked_at'),
+                    'd/m H:i',
+                ))->all(),
                 'response_times' => $chartChecks->map(fn (Check $check) => $check->response_time_ms)->all(),
                 'success' => $chartChecks->map(fn (Check $check) => $check->success)->all(),
             ],
@@ -227,7 +234,7 @@ class StatusPageService
     private function publicCheckPayload(Check $check): array
     {
         return [
-            'checked_at' => $check->checked_at->toIso8601String(),
+            'checked_at' => DisplayDate::utcIsoFromModel($check, 'checked_at'),
             'success' => $check->success,
             'response_time_ms' => $check->response_time_ms,
             'status_label' => $check->success ? 'Operativo' : 'Non disponibile',

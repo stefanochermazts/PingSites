@@ -1,3 +1,4 @@
+@use('App\Support\DisplayDate')
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -18,7 +19,7 @@
                 'text-slate-500' => $overall_status === 'unavailable',
             ])">{{ $overall_status_label }}</p>
             @if($updated_at)
-                <p class="mt-1 text-sm text-slate-500">Ultimo aggiornamento: {{ \Illuminate\Support\Carbon::parse($updated_at)->format('d/m/Y H:i') }}</p>
+                <p class="mt-1 text-sm text-slate-500">Ultimo aggiornamento: {{ DisplayDate::format($updated_at, 'd/m/Y H:i') }}</p>
             @endif
         </div>
     </header>
@@ -50,8 +51,8 @@
                                 </td>
                                 <td class="hidden py-4 pr-4 text-slate-600 sm:table-cell">
                                     @if($monitor['last_checked_at'])
-                                        <span title="{{ \Illuminate\Support\Carbon::parse($monitor['last_checked_at'])->format('d/m/Y H:i:s') }}">
-                                            {{ \Illuminate\Support\Carbon::parse($monitor['last_checked_at'])->diffForHumans() }}
+                                        <span title="{{ DisplayDate::format($monitor['last_checked_at'], 'd/m/Y H:i:s') }}">
+                                            {{ DisplayDate::parse($monitor['last_checked_at'])?->diffForHumans() }}
                                         </span>
                                     @else
                                         <span class="text-slate-400">—</span>
@@ -117,8 +118,8 @@
                             <p class="font-medium text-amber-900">{{ $maintenance['title'] }}</p>
                             <p class="text-amber-800">{{ $maintenance['message'] }}</p>
                             <p class="text-sm text-amber-700">
-                                {{ \Illuminate\Support\Carbon::parse($maintenance['starts_at'])->format('d/m/Y H:i') }} -
-                                {{ \Illuminate\Support\Carbon::parse($maintenance['ends_at'])->format('d/m/Y H:i') }}
+                                {{ DisplayDate::format($maintenance['starts_at'], 'd/m/Y H:i') }} -
+                                {{ DisplayDate::format($maintenance['ends_at'], 'd/m/Y H:i') }}
                                 @if($maintenance['is_active']) (in corso) @endif
                             </p>
                         </li>
@@ -138,9 +139,9 @@
                                 <span class="text-sm text-slate-500">{{ $incident['status'] }}</span>
                             </div>
                             <p class="text-sm text-slate-500">
-                                {{ \Illuminate\Support\Carbon::parse($incident['opened_at'])->format('d/m/Y H:i') }}
+                                {{ DisplayDate::format($incident['opened_at'], 'd/m/Y H:i') }}
                                 @if($incident['closed_at'])
-                                    - {{ \Illuminate\Support\Carbon::parse($incident['closed_at'])->format('d/m/Y H:i') }}
+                                    - {{ DisplayDate::format($incident['closed_at'], 'd/m/Y H:i') }}
                                 @endif
                             </p>
                         </li>
