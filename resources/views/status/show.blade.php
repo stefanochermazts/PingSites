@@ -190,5 +190,6 @@
     });
 </script>
 @endif
+@include('status.partials.auto-refresh')
 </body>
 </html>

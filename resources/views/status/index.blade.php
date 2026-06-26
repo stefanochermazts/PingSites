@@ -151,5 +151,6 @@
         @endif
     </main>
 </div>
+@include('status.partials.auto-refresh')
 </body>
 </html>
