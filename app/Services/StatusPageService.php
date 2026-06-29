@@ -73,7 +73,7 @@ class StatusPageService
                     'name' => $monitor->displayPublicName(),
                     'status' => $this->publicMonitorStatus($monitor),
                     'status_label' => $this->publicMonitorStatusLabel($monitor),
-                    'last_checked_at' => DisplayDate::utcIsoFromModel($monitor, 'last_checked_at'),
+                    'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                     'last_response_time_ms' => $monitor->last_response_time_ms,
                     'uptime_percent' => $stats['uptime_percent'],
                     'avg_response_time_ms' => $stats['avg_response_time_ms'],
@@ -83,24 +83,24 @@ class StatusPageService
             'open_incidents' => $openIncidents->map(fn (Incident $incident) => [
                 'name' => $incident->monitor->displayPublicName(),
                 'message' => $incident->publicMessage(),
-                'opened_at' => DisplayDate::utcIsoFromModel($incident, 'opened_at'),
+                'opened_at' => DisplayDate::isoFromModel($incident, 'opened_at'),
             ])->values()->all(),
             'maintenances' => $maintenances->map(fn ($maintenance) => [
                 'title' => $maintenance->title,
                 'message' => $maintenance->public_message ?: 'Manutenzione programmata.',
-                'starts_at' => DisplayDate::utcIsoFromModel($maintenance, 'starts_at'),
-                'ends_at' => DisplayDate::utcIsoFromModel($maintenance, 'ends_at'),
+                'starts_at' => DisplayDate::isoFromModel($maintenance, 'starts_at'),
+                'ends_at' => DisplayDate::isoFromModel($maintenance, 'ends_at'),
                 'is_active' => $maintenance->isActive(),
             ])->values()->all(),
             'recent_incidents' => $recentIncidents->map(fn (Incident $incident) => [
                 'name' => $incident->monitor->displayPublicName(),
                 'status' => $incident->status->label(),
-                'opened_at' => DisplayDate::utcIsoFromModel($incident, 'opened_at'),
-                'closed_at' => DisplayDate::utcIsoFromModel($incident, 'closed_at'),
+                'opened_at' => DisplayDate::isoFromModel($incident, 'opened_at'),
+                'closed_at' => DisplayDate::isoFromModel($incident, 'closed_at'),
             ])->values()->all(),
             'updated_at' => $monitors
                 ->filter(fn (Monitor $monitor) => $monitor->getRawOriginal('last_checked_at') !== null)
-                ->map(fn (Monitor $monitor) => DisplayDate::utcIsoFromModel($monitor, 'last_checked_at'))
+                ->map(fn (Monitor $monitor) => DisplayDate::isoFromModel($monitor, 'last_checked_at'))
                 ->max(),
         ];
     }
@@ -129,14 +129,14 @@ class StatusPageService
                 'name' => $monitor->displayPublicName(),
                 'status' => $this->publicMonitorStatus($monitor),
                 'status_label' => $this->publicMonitorStatusLabel($monitor),
-                'last_checked_at' => DisplayDate::utcIsoFromModel($monitor, 'last_checked_at'),
+                'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                 'last_response_time_ms' => $monitor->last_response_time_ms,
             ],
             'stats' => $stats,
             'checks' => $checks->map(fn (Check $check) => $this->publicCheckPayload($check))->values()->all(),
             'chart' => [
                 'labels' => $chartChecks->map(fn (Check $check) => DisplayDate::format(
-                    DisplayDate::utcIsoFromModel($check, 'checked_at'),
+                    $check->checked_at,
                     'd/m H:i',
                 ))->all(),
                 'response_times' => $chartChecks->map(fn (Check $check) => $check->response_time_ms)->all(),
@@ -234,7 +234,7 @@ class StatusPageService
     private function publicCheckPayload(Check $check): array
     {
         return [
-            'checked_at' => DisplayDate::utcIsoFromModel($check, 'checked_at'),
+            'checked_at' => DisplayDate::isoFromModel($check, 'checked_at'),
             'success' => $check->success,
             'response_time_ms' => $check->response_time_ms,
             'status_label' => $check->success ? 'Operativo' : 'Non disponibile',

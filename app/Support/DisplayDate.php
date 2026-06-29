@@ -13,11 +13,7 @@ class DisplayDate
             return null;
         }
 
-        if ($value instanceof \DateTimeInterface) {
-            return Carbon::instance($value)->utc()->timezone(config('app.timezone'));
-        }
-
-        return Carbon::parse($value, 'UTC')->timezone(config('app.timezone'));
+        return Carbon::parse($value)->timezone(config('app.timezone'));
     }
 
     public static function format(string|\DateTimeInterface|null $value, string $format = 'd/m/Y H:i:s'): ?string
@@ -25,14 +21,14 @@ class DisplayDate
         return self::parse($value)?->format($format);
     }
 
-    public static function utcIsoFromModel(Model $model, string $column): ?string
+    public static function isoFromModel(Model $model, string $column): ?string
     {
-        $value = $model->getRawOriginal($column);
+        $value = $model->getAttribute($column);
 
         if ($value === null) {
             return null;
         }
 
-        return Carbon::parse($value, 'UTC')->toIso8601String();
+        return self::parse($value)?->toIso8601String();
     }
 }

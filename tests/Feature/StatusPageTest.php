@@ -145,14 +145,14 @@ class StatusPageTest extends TestCase
             'success' => true,
             'http_code' => 200,
             'response_time_ms' => 120,
-            'checked_at' => Carbon::parse('2026-06-26 06:57:06', 'UTC'),
+            'checked_at' => Carbon::parse('2026-06-29 10:43:03', 'Europe/Rome'),
         ]);
 
         Cache::flush();
 
         $this->get(route('status.monitor', [$statusPage, $monitor]))
             ->assertOk()
-            ->assertSee('26/06/2026 08:57:06');
+            ->assertSee('29/06/2026 10:43:03');
     }
 
     public function test_monitor_on_other_status_page_returns_not_found(): void
