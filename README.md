@@ -80,23 +80,50 @@ MONITOR_ALERT_RECIPIENTS=team@example.com,ops@example.com
 
 ### Supervisor workers
 
+Usa **un solo processo per coda** su Cloudways e fai riciclare i worker periodicamente per evitare accumulo di file descriptor (`Too many open files`):
+
 ```ini
 [program:pingsites-checks]
-command=php /path/to/app/artisan queue:work --queue=checks --timeout=30 --tries=2
+command=php /path/to/app/artisan queue:work --queue=checks --timeout=30 --tries=2 --max-jobs=500 --max-time=3600 --memory=128
 autostart=true
 autorestart=true
-numprocs=2
+numprocs=1
 
 [program:pingsites-notifications]
-command=php /path/to/app/artisan queue:work --queue=notifications --timeout=60 --tries=3
+command=php /path/to/app/artisan queue:work --queue=notifications --timeout=60 --tries=3 --max-jobs=200 --max-time=3600 --memory=128
 autostart=true
 autorestart=true
+numprocs=1
 
 [program:pingsites-cleanup]
-command=php /path/to/app/artisan queue:work --queue=cleanup --timeout=120 --tries=1
+command=php /path/to/app/artisan queue:work --queue=cleanup --timeout=120 --tries=1 --max-jobs=50 --max-time=3600 --memory=128
 autostart=true
 autorestart=true
+numprocs=1
 ```
+
+Dopo ogni modifica: `supervisorctl reread && supervisorctl update && supervisorctl restart all`.
+
+### Produzione Cloudways
+
+Nel `.env` di produzione:
+
+```env
+LOG_STACK=daily
+LOG_LEVEL=warning
+APP_TIMEZONE=Europe/Rome
+```
+
+Se compare `Too many open files`:
+
+```bash
+ulimit -n
+lsof -u $(whoami) | wc -l
+> storage/logs/laravel.log
+supervisorctl restart all
+```
+
+Se persiste, riduci i worker a `numprocs=1` e verifica di non avere processi `queue:work` duplicati avviati manualmente.
 
 ## Comandi utili
 

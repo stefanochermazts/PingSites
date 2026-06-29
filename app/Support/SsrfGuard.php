@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 
@@ -50,9 +51,17 @@ class SsrfGuard
             return;
         }
 
-        $records = @dns_get_record($host, DNS_A + DNS_AAAA);
+        $records = Cache::remember(
+            'ssrf:dns:'.$host,
+            300,
+            function () use ($host): array {
+                $result = @dns_get_record($host, DNS_A + DNS_AAAA);
 
-        if ($records === false || $records === []) {
+                return $result === false ? [] : $result;
+            },
+        );
+
+        if ($records === []) {
             return;
         }
 
@@ -104,9 +113,14 @@ class SsrfGuard
             'verify' => $verifySsl,
             'timeout' => $timeout,
             'connect_timeout' => min($timeout, 5),
+            'curl' => [
+                CURLOPT_FORBID_REUSE => true,
+                CURLOPT_FRESH_CONNECT => true,
+            ],
         ])->withHeaders([
             'User-Agent' => $userAgent,
             'Accept' => '*/*',
+            'Connection' => 'close',
         ]);
     }
 }
