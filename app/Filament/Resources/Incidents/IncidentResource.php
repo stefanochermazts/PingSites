@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Incidents;
 
+use App\Enums\IncidentStatus;
 use App\Filament\Resources\Incidents\Pages\ListIncidents;
 use App\Filament\Resources\Incidents\Pages\ViewIncident;
 use App\Filament\Resources\Incidents\Schemas\IncidentInfolist;
@@ -29,6 +30,20 @@ class IncidentResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Monitoraggio';
 
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::query()
+            ->where('status', IncidentStatus::Open)
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
 
     public static function canCreate(): bool
     {
