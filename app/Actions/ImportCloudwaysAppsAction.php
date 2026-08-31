@@ -32,8 +32,19 @@ class ImportCloudwaysAppsAction
             throw new CloudwaysException('Status page non trovata.');
         }
 
-        $apps = $this->client->appsForServer($serverId, $accessToken);
+        return $this->importApps(
+            $serverId,
+            $statusPage,
+            $this->client->appsForServer($serverId, $accessToken),
+        );
+    }
 
+    /**
+     * @param  list<array<string, mixed>>  $apps
+     * @return array{created: int, linked: int, skipped: int, failed: int}
+     */
+    public function importApps(string $serverId, StatusPage $statusPage, array $apps): array
+    {
         $result = [
             'created' => 0,
             'linked' => 0,

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ErrorType;
 use App\Enums\MonitorStatus;
 use App\Models\Check;
 use App\Models\Monitor;
@@ -113,6 +114,45 @@ class StatusPageTest extends TestCase
         $this->get('/status/'.$statusPage->slug.'?status[]=down')
             ->assertOk()
             ->assertSee('Sito Online');
+    }
+
+    public function test_status_page_shows_monitor_url_and_error_detail(): void
+    {
+        $statusPage = $this->defaultStatusPage();
+
+        Monitor::query()->create([
+            'name' => 'Sito Down',
+            'url' => 'https://down.example.com',
+            'status' => MonitorStatus::Down,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Down',
+            'valid_status_codes' => [200],
+            'last_http_code' => 503,
+            'last_error_type' => ErrorType::Http5xx,
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Timeout',
+            'url' => 'https://timeout.example.com',
+            'status' => MonitorStatus::Down,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Timeout',
+            'valid_status_codes' => [200],
+            'last_error_type' => ErrorType::Timeout,
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $statusPage))
+            ->assertOk()
+            ->assertSee('https://down.example.com')
+            ->assertSee('https://timeout.example.com')
+            ->assertSee('HTTP 503')
+            ->assertSee('Timeout')
+            ->assertDontSee('http_5xx')
+            ->assertDontSee('dns_error');
     }
 
     public function test_status_page_lists_monitors_for_selected_page_only(): void

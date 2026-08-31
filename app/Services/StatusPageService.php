@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ErrorType;
 use App\Enums\IncidentStatus;
 use App\Enums\MonitorStatus;
 use App\Models\Check;
@@ -71,8 +72,10 @@ class StatusPageService
                 return [
                     'id' => $monitor->id,
                     'name' => $monitor->displayPublicName(),
+                    'url' => $monitor->url,
                     'status' => $this->publicMonitorStatus($monitor),
                     'status_label' => $this->publicMonitorStatusLabel($monitor),
+                    'error_detail' => $this->publicErrorDetail($monitor),
                     'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                     'last_response_time_ms' => $monitor->last_response_time_ms,
                     'uptime_percent' => $stats['uptime_percent'],
@@ -374,5 +377,34 @@ class StatusPageService
             'operational' => 'Operativo',
             default => 'Stato non disponibile',
         };
+    }
+
+    private function publicErrorDetail(Monitor $monitor): ?string
+    {
+        $status = $this->publicMonitorStatus($monitor);
+        if (! in_array($status, ['down', 'unknown'], true)) {
+            return null;
+        }
+
+        $parts = [];
+
+        if ($monitor->last_http_code) {
+            $parts[] = 'HTTP '.$monitor->last_http_code;
+        }
+
+        if ($monitor->last_error_type instanceof ErrorType) {
+            $httpErrorWithCode = $monitor->last_http_code !== null
+                && in_array($monitor->last_error_type, [
+                    ErrorType::Http4xx,
+                    ErrorType::Http5xx,
+                    ErrorType::InvalidHttpCode,
+                ], true);
+
+            if (! $httpErrorWithCode) {
+                $parts[] = $monitor->last_error_type->label();
+            }
+        }
+
+        return $parts === [] ? null : implode(' · ', $parts);
     }
 }

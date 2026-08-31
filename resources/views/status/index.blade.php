@@ -65,12 +65,22 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse($monitors as $monitor)
                             <tr class="align-middle">
-                                <td class="py-4 pr-4 font-medium">{{ $monitor['name'] }}</td>
+                                <td class="py-4 pr-4">
+                                    <div class="font-medium">{{ $monitor['name'] }}</div>
+                                    @if(!empty($monitor['url']))
+                                        <div class="mt-0.5 max-w-xs truncate text-xs font-normal text-slate-500" title="{{ $monitor['url'] }}">
+                                            {{ $monitor['url'] }}
+                                        </div>
+                                    @endif
+                                </td>
                                 <td class="py-4 pr-4">
                                     @include('status.partials.status-badge', [
                                         'status' => $monitor['status'],
                                         'label' => $monitor['status_label'],
                                     ])
+                                    @if(!empty($monitor['error_detail']))
+                                        <div class="mt-1 text-xs text-red-600">{{ $monitor['error_detail'] }}</div>
+                                    @endif
                                 </td>
                                 <td class="hidden py-4 pr-4 text-slate-600 sm:table-cell">
                                     @if($monitor['last_checked_at'])

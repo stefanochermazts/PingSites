@@ -11,7 +11,7 @@ class SyncCloudwaysMonitorUrlsCommand extends Command
 {
     protected $signature = 'cloudways:sync-monitor-urls';
 
-    protected $description = 'Aggiorna gli URL dei monitor importati da Cloudways se sono cambiati';
+    protected $description = 'Aggiorna gli URL Cloudways e importa le nuove app dei server già collegati';
 
     public function handle(CloudwaysClient $client, SyncCloudwaysMonitorUrlsAction $sync): int
     {
@@ -32,9 +32,11 @@ class SyncCloudwaysMonitorUrlsCommand extends Command
         }
 
         $this->info(sprintf(
-            'Sync Cloudways completato: aggiornati: %d, invariati: %d, mancanti: %d, errori: %d',
+            'Sync Cloudways completato: aggiornati: %d, invariati: %d, creati: %d, collegati: %d, mancanti: %d, errori: %d',
             $result['updated'],
             $result['unchanged'],
+            $result['created'],
+            $result['linked'],
             $result['missing'],
             $result['failed'],
         ));
