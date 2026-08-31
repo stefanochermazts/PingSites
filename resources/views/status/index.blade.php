@@ -26,29 +26,52 @@
 
     <main class="mx-auto max-w-5xl space-y-8 px-4 py-8">
         <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="mb-4 flex flex-col gap-3">
                 <h2 class="text-xl font-semibold">Servizi</h2>
-                @if(!empty($status_filters))
-                    <nav class="flex flex-wrap gap-2" aria-label="Filtra per stato">
-                        @foreach($status_filters as $filter)
-                            <a
-                                href="{{ $filter['url'] }}"
-                                @class([
-                                    'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition',
-                                    'bg-slate-900 text-white' => $filter['active'],
-                                    'bg-slate-100 text-slate-600 hover:bg-slate-200' => ! $filter['active'],
-                                ])
-                            >
-                                <span>{{ $filter['label'] }}</span>
-                                <span @class([
-                                    'tabular-nums',
-                                    'text-slate-300' => $filter['active'],
-                                    'text-slate-400' => ! $filter['active'],
-                                ])>{{ $filter['count'] }}</span>
-                            </a>
-                        @endforeach
-                    </nav>
-                @endif
+                <div class="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+                    @if(!empty($status_filters))
+                        <nav class="flex flex-wrap gap-2" aria-label="Filtra per stato">
+                            @foreach($status_filters as $filter)
+                                <a
+                                    href="{{ $filter['url'] }}"
+                                    @class([
+                                        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition',
+                                        'bg-slate-900 text-white' => $filter['active'],
+                                        'bg-slate-100 text-slate-600 hover:bg-slate-200' => ! $filter['active'],
+                                    ])
+                                >
+                                    <span>{{ $filter['label'] }}</span>
+                                    <span @class([
+                                        'tabular-nums',
+                                        'text-slate-300' => $filter['active'],
+                                        'text-slate-400' => ! $filter['active'],
+                                    ])>{{ $filter['count'] }}</span>
+                                </a>
+                            @endforeach
+                        </nav>
+                    @endif
+                    @if(!empty($publication_filters))
+                        <nav class="flex flex-wrap gap-2" aria-label="Filtra per pubblicazione">
+                            @foreach($publication_filters as $filter)
+                                <a
+                                    href="{{ $filter['url'] }}"
+                                    @class([
+                                        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition',
+                                        'bg-slate-900 text-white' => $filter['active'],
+                                        'bg-slate-100 text-slate-600 hover:bg-slate-200' => ! $filter['active'],
+                                    ])
+                                >
+                                    <span>{{ $filter['label'] }}</span>
+                                    <span @class([
+                                        'tabular-nums',
+                                        'text-slate-300' => $filter['active'],
+                                        'text-slate-400' => ! $filter['active'],
+                                    ])>{{ $filter['count'] }}</span>
+                                </a>
+                            @endforeach
+                        </nav>
+                    @endif
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full text-left text-sm">

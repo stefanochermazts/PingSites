@@ -116,6 +116,59 @@ class StatusPageTest extends TestCase
             ->assertSee('Sito Online');
     }
 
+    public function test_status_page_filters_published_and_unpublished_urls_with_status(): void
+    {
+        $statusPage = $this->defaultStatusPage();
+
+        Monitor::query()->create([
+            'name' => 'Dominio Custom Down',
+            'url' => 'https://www.cliente.it',
+            'status' => MonitorStatus::Down,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Dominio Custom Down',
+            'valid_status_codes' => [200],
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Cloudways Down',
+            'url' => 'https://wordpress-1-2.cloudwaysapps.com',
+            'status' => MonitorStatus::Down,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Cloudways Down',
+            'valid_status_codes' => [200],
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Dominio Custom Online',
+            'url' => 'https://www.ok.it',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Dominio Custom Online',
+            'valid_status_codes' => [200],
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', ['statusPage' => $statusPage, 'pubblicazione' => 'non-pubblicati']))
+            ->assertOk()
+            ->assertSee('Cloudways Down')
+            ->assertDontSee('Dominio Custom Down')
+            ->assertDontSee('Dominio Custom Online');
+
+        $this->get(route('status.show', [
+            'statusPage' => $statusPage,
+            'status' => 'down',
+            'pubblicazione' => 'pubblicati',
+        ]))
+            ->assertOk()
+            ->assertSee('Dominio Custom Down')
+            ->assertDontSee('Cloudways Down')
+            ->assertDontSee('Dominio Custom Online');
+    }
+
     public function test_status_page_shows_monitor_url_and_error_detail(): void
     {
         $statusPage = $this->defaultStatusPage();

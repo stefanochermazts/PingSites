@@ -9,6 +9,7 @@ use App\Models\Check;
 use App\Models\Incident;
 use App\Models\Monitor;
 use App\Models\StatusPage;
+use App\Services\Cloudways\CloudwaysAppUrl;
 use App\Support\DisplayDate;
 use Illuminate\Support\Collection;
 
@@ -168,12 +169,74 @@ class StatusPageService
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function applyStatusFilter(array $data, ?string $status, StatusPage $statusPage): array
+    public function applyStatusFilter(array $data, ?string $status, StatusPage $statusPage, ?string $publication = null): array
     {
-        $allowed = ['operational', 'down', 'maintenance', 'unknown'];
-        $active = is_string($status) && in_array($status, $allowed, true) ? $status : null;
+        $allowedStatus = ['operational', 'down', 'maintenance', 'unknown'];
+        $activeStatus = is_string($status) && in_array($status, $allowedStatus, true) ? $status : null;
+
+        $allowedPublication = ['pubblicati', 'non-pubblicati'];
+        $activePublication = is_string($publication) && in_array($publication, $allowedPublication, true)
+            ? $publication
+            : null;
 
         $monitors = is_array($data['monitors'] ?? null) ? $data['monitors'] : [];
+
+        $matchingStatus = array_values(array_filter(
+            $monitors,
+            fn (array $monitor): bool => $activeStatus === null || ($monitor['status'] ?? null) === $activeStatus,
+        ));
+        $matchingPublication = array_values(array_filter(
+            $monitors,
+            fn (array $monitor): bool => $this->matchesPublication($monitor, $activePublication),
+        ));
+
+        $data['monitors'] = array_values(array_filter(
+            $matchingPublication,
+            fn (array $monitor): bool => $activeStatus === null || ($monitor['status'] ?? null) === $activeStatus,
+        ));
+
+        $statusCounts = $this->statusCounts($matchingPublication);
+        $publicationCounts = $this->publicationCounts($matchingStatus);
+
+        $data['status_filter'] = $activeStatus;
+        $data['publication_filter'] = $activePublication;
+        $data['status_filters'] = [
+            $this->filterLink($statusPage, 'Tutti', $statusCounts['all'], $activeStatus === null, null, $activePublication),
+            $this->filterLink($statusPage, 'Operativo', $statusCounts['operational'], $activeStatus === 'operational', 'operational', $activePublication),
+            $this->filterLink($statusPage, 'Problemi rilevati', $statusCounts['down'], $activeStatus === 'down', 'down', $activePublication),
+            $this->filterLink($statusPage, 'Manutenzione', $statusCounts['maintenance'], $activeStatus === 'maintenance', 'maintenance', $activePublication),
+            $this->filterLink($statusPage, 'Stato non disponibile', $statusCounts['unknown'], $activeStatus === 'unknown', 'unknown', $activePublication),
+        ];
+        $data['publication_filters'] = [
+            $this->filterLink($statusPage, 'Tutti', $publicationCounts['all'], $activePublication === null, $activeStatus, null),
+            $this->filterLink($statusPage, 'Pubblicati', $publicationCounts['pubblicati'], $activePublication === 'pubblicati', $activeStatus, 'pubblicati'),
+            $this->filterLink($statusPage, 'Non pubblicati', $publicationCounts['non-pubblicati'], $activePublication === 'non-pubblicati', $activeStatus, 'non-pubblicati'),
+        ];
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $monitor
+     */
+    private function matchesPublication(array $monitor, ?string $publication): bool
+    {
+        if ($publication === null) {
+            return true;
+        }
+
+        $url = is_string($monitor['url'] ?? null) ? $monitor['url'] : null;
+        $isTemporary = CloudwaysAppUrl::isTemporaryCloudwaysUrl($url);
+
+        return $publication === 'non-pubblicati' ? $isTemporary : ! $isTemporary;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $monitors
+     * @return array{all: int, operational: int, down: int, maintenance: int, unknown: int}
+     */
+    private function statusCounts(array $monitors): array
+    {
         $counts = [
             'all' => count($monitors),
             'operational' => 0,
@@ -183,59 +246,64 @@ class StatusPageService
         ];
 
         foreach ($monitors as $monitor) {
-            $key = is_array($monitor) ? ($monitor['status'] ?? null) : null;
+            $key = $monitor['status'] ?? null;
             if (is_string($key) && array_key_exists($key, $counts)) {
                 $counts[$key]++;
             }
         }
 
-        if ($active !== null) {
-            $data['monitors'] = array_values(array_filter(
-                $monitors,
-                fn (array $monitor): bool => ($monitor['status'] ?? null) === $active,
-            ));
-        }
+        return $counts;
+    }
 
-        $data['status_filter'] = $active;
-        $data['status_filters'] = [
-            [
-                'value' => null,
-                'label' => 'Tutti',
-                'count' => $counts['all'],
-                'active' => $active === null,
-                'url' => route('status.show', $statusPage),
-            ],
-            [
-                'value' => 'operational',
-                'label' => 'Operativo',
-                'count' => $counts['operational'],
-                'active' => $active === 'operational',
-                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'operational']),
-            ],
-            [
-                'value' => 'down',
-                'label' => 'Problemi rilevati',
-                'count' => $counts['down'],
-                'active' => $active === 'down',
-                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'down']),
-            ],
-            [
-                'value' => 'maintenance',
-                'label' => 'Manutenzione',
-                'count' => $counts['maintenance'],
-                'active' => $active === 'maintenance',
-                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'maintenance']),
-            ],
-            [
-                'value' => 'unknown',
-                'label' => 'Stato non disponibile',
-                'count' => $counts['unknown'],
-                'active' => $active === 'unknown',
-                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'unknown']),
-            ],
+    /**
+     * @param  list<array<string, mixed>>  $monitors
+     * @return array{all: int, pubblicati: int, non-pubblicati: int}
+     */
+    private function publicationCounts(array $monitors): array
+    {
+        $counts = [
+            'all' => count($monitors),
+            'pubblicati' => 0,
+            'non-pubblicati' => 0,
         ];
 
-        return $data;
+        foreach ($monitors as $monitor) {
+            $url = is_string($monitor['url'] ?? null) ? $monitor['url'] : null;
+            if (CloudwaysAppUrl::isTemporaryCloudwaysUrl($url)) {
+                $counts['non-pubblicati']++;
+            } else {
+                $counts['pubblicati']++;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @return array{label: string, count: int, active: bool, url: string}
+     */
+    private function filterLink(
+        StatusPage $statusPage,
+        string $label,
+        int $count,
+        bool $active,
+        ?string $status,
+        ?string $publication,
+    ): array {
+        $params = ['statusPage' => $statusPage];
+        if ($status !== null) {
+            $params['status'] = $status;
+        }
+        if ($publication !== null) {
+            $params['pubblicazione'] = $publication;
+        }
+
+        return [
+            'label' => $label,
+            'count' => $count,
+            'active' => $active,
+            'url' => route('status.show', $params),
+        ];
     }
 
     public static function forgetAllCaches(?Monitor $monitor = null): void

@@ -73,4 +73,20 @@ class CloudwaysAppUrl
 
         return trim((string) $value);
     }
+
+    public static function isTemporaryCloudwaysUrl(?string $url): bool
+    {
+        if (! is_string($url) || $url === '') {
+            return false;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        if (! is_string($host) || $host === '') {
+            return false;
+        }
+
+        $host = strtolower($host);
+
+        return $host === 'cloudwaysapps.com' || str_ends_with($host, '.cloudwaysapps.com');
+    }
 }

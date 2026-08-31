@@ -51,4 +51,12 @@ class CloudwaysAppUrlTest extends TestCase
     {
         $this->assertNull(CloudwaysAppUrl::fromApp(['label' => 'Senza dominio']));
     }
+
+    public function test_detects_temporary_cloudways_urls(): void
+    {
+        $this->assertTrue(CloudwaysAppUrl::isTemporaryCloudwaysUrl('https://wordpress-1-2.cloudwaysapps.com'));
+        $this->assertTrue(CloudwaysAppUrl::isTemporaryCloudwaysUrl('https://wordpress-1-2.cloudwaysapps.com/path'));
+        $this->assertFalse(CloudwaysAppUrl::isTemporaryCloudwaysUrl('https://www.cliente.it'));
+        $this->assertFalse(CloudwaysAppUrl::isTemporaryCloudwaysUrl('https://notcloudwaysapps.com'));
+    }
 }

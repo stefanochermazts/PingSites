@@ -26,11 +26,13 @@ class StatusPageController extends Controller
         );
 
         $status = $request->query('status');
+        $publication = $request->query('pubblicazione');
 
         $data = $statusPageService->applyStatusFilter(
             $data,
             is_string($status) ? $status : null,
             $statusPage,
+            is_string($publication) ? $publication : null,
         );
 
         return view('status.index', $data);
