@@ -161,6 +161,80 @@ class StatusPageService
         return 'status-page-'.$statusPage->slug.'-monitor-'.$monitor->id;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function applyStatusFilter(array $data, ?string $status, StatusPage $statusPage): array
+    {
+        $allowed = ['operational', 'down', 'maintenance', 'unknown'];
+        $active = is_string($status) && in_array($status, $allowed, true) ? $status : null;
+
+        $monitors = is_array($data['monitors'] ?? null) ? $data['monitors'] : [];
+        $counts = [
+            'all' => count($monitors),
+            'operational' => 0,
+            'down' => 0,
+            'maintenance' => 0,
+            'unknown' => 0,
+        ];
+
+        foreach ($monitors as $monitor) {
+            $key = is_array($monitor) ? ($monitor['status'] ?? null) : null;
+            if (is_string($key) && array_key_exists($key, $counts)) {
+                $counts[$key]++;
+            }
+        }
+
+        if ($active !== null) {
+            $data['monitors'] = array_values(array_filter(
+                $monitors,
+                fn (array $monitor): bool => ($monitor['status'] ?? null) === $active,
+            ));
+        }
+
+        $data['status_filter'] = $active;
+        $data['status_filters'] = [
+            [
+                'value' => null,
+                'label' => 'Tutti',
+                'count' => $counts['all'],
+                'active' => $active === null,
+                'url' => route('status.show', $statusPage),
+            ],
+            [
+                'value' => 'operational',
+                'label' => 'Operativo',
+                'count' => $counts['operational'],
+                'active' => $active === 'operational',
+                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'operational']),
+            ],
+            [
+                'value' => 'down',
+                'label' => 'Problemi rilevati',
+                'count' => $counts['down'],
+                'active' => $active === 'down',
+                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'down']),
+            ],
+            [
+                'value' => 'maintenance',
+                'label' => 'Manutenzione',
+                'count' => $counts['maintenance'],
+                'active' => $active === 'maintenance',
+                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'maintenance']),
+            ],
+            [
+                'value' => 'unknown',
+                'label' => 'Stato non disponibile',
+                'count' => $counts['unknown'],
+                'active' => $active === 'unknown',
+                'url' => route('status.show', ['statusPage' => $statusPage, 'status' => 'unknown']),
+            ],
+        ];
+
+        return $data;
+    }
+
     public static function forgetAllCaches(?Monitor $monitor = null): void
     {
         StatusPage::query()->each(function (StatusPage $statusPage) use ($monitor): void {

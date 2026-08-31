@@ -6,6 +6,7 @@ use App\Models\Monitor;
 use App\Models\StatusPage;
 use App\Services\StatusPageService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
@@ -16,12 +17,20 @@ class StatusPageController extends Controller
         return redirect()->route('status.show', $statusPageService->defaultPage());
     }
 
-    public function show(StatusPage $statusPage, StatusPageService $statusPageService): View
+    public function show(Request $request, StatusPage $statusPage, StatusPageService $statusPageService): View
     {
         $data = Cache::remember(
             StatusPageService::cacheKey($statusPage),
             60,
             fn () => $statusPageService->data($statusPage),
+        );
+
+        $status = $request->query('status');
+
+        $data = $statusPageService->applyStatusFilter(
+            $data,
+            is_string($status) ? $status : null,
+            $statusPage,
         );
 
         return view('status.index', $data);

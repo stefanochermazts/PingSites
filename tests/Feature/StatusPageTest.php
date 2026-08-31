@@ -45,6 +45,76 @@ class StatusPageTest extends TestCase
         $response->assertSee('Devisia Status');
     }
 
+    public function test_status_page_can_filter_monitors_by_status(): void
+    {
+        $statusPage = $this->defaultStatusPage();
+
+        Monitor::query()->create([
+            'name' => 'Sito Online',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Online',
+            'valid_status_codes' => [200],
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Down',
+            'url' => 'https://example.org',
+            'status' => MonitorStatus::Down,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Down',
+            'valid_status_codes' => [200],
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $statusPage))
+            ->assertOk()
+            ->assertSee('Sito Online')
+            ->assertSee('Sito Down')
+            ->assertSee('Tutti')
+            ->assertSee('Operativo')
+            ->assertSee('Problemi rilevati');
+
+        $this->get(route('status.show', ['statusPage' => $statusPage, 'status' => 'down']))
+            ->assertOk()
+            ->assertSee('Sito Down')
+            ->assertDontSee('Sito Online');
+
+        $this->get(route('status.show', ['statusPage' => $statusPage, 'status' => 'operational']))
+            ->assertOk()
+            ->assertSee('Sito Online')
+            ->assertDontSee('Sito Down');
+    }
+
+    public function test_status_page_ignores_invalid_status_filter(): void
+    {
+        $statusPage = $this->defaultStatusPage();
+
+        Monitor::query()->create([
+            'name' => 'Sito Online',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Online',
+            'valid_status_codes' => [200],
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', ['statusPage' => $statusPage, 'status' => 'not-a-status']))
+            ->assertOk()
+            ->assertSee('Sito Online');
+
+        $this->get('/status/'.$statusPage->slug.'?status[]=down')
+            ->assertOk()
+            ->assertSee('Sito Online');
+    }
+
     public function test_status_page_lists_monitors_for_selected_page_only(): void
     {
         $default = $this->defaultStatusPage();
