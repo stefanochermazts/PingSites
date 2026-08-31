@@ -129,6 +129,7 @@ Se persiste, riduci i worker a `numprocs=1` e verifica di non avere processi `qu
 
 ```bash
 php artisan monitors:dispatch-checks
+php artisan cloudways:sync-monitor-urls
 php artisan checks:prune
 php artisan queue:work --queue=checks,notifications,cleanup
 ```

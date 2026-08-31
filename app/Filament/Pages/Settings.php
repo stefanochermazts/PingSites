@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Settings\CloudwaysSettings;
 use App\Settings\MonitorSettings;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -118,6 +119,15 @@ class Settings extends Page
                                 ->numeric()
                                 ->required(),
                         ]),
+                    Section::make('Cloudways')
+                        ->description('Access token per importare le applicazioni e aggiornare gli URL ogni ora.')
+                        ->schema([
+                            TextInput::make('cloudways_access_token')
+                                ->label('Access token')
+                                ->password()
+                                ->revealable()
+                                ->helperText('Lascia vuoto per mantenere il token già salvato. In alternativa usa CLOUDWAYS_ACCESS_TOKEN nel .env.'),
+                        ]),
                 ])
                     ->livewireSubmitHandler('save')
                     ->footer([
@@ -144,9 +154,18 @@ class Settings extends Page
         $data = $this->form->getState();
         $data['default_valid_status_codes'] = array_map('intval', $data['default_valid_status_codes']);
 
+        $cloudwaysToken = $data['cloudways_access_token'] ?? null;
+        unset($data['cloudways_access_token']);
+
         $settings = app(MonitorSettings::class);
         $settings->fill($data);
         $settings->save();
+
+        if (is_string($cloudwaysToken) && $cloudwaysToken !== '') {
+            $cloudways = app(CloudwaysSettings::class);
+            $cloudways->access_token = $cloudwaysToken;
+            $cloudways->save();
+        }
 
         Notification::make()
             ->title('Impostazioni salvate')

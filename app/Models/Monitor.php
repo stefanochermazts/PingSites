@@ -34,6 +34,8 @@ class Monitor extends Model
         'recovery_threshold',
         'published',
         'status_page_id',
+        'cloudways_server_id',
+        'cloudways_app_id',
         'public_name',
         'internal_notes',
         'consecutive_failures',
