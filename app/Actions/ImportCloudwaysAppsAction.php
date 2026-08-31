@@ -116,7 +116,10 @@ class ImportCloudwaysAppsAction
             'is_active' => true,
             'check_frequency' => 10,
             'timeout' => 10,
-            'valid_status_codes' => array_map('intval', $this->settings->default_valid_status_codes),
+            'valid_status_codes' => array_map(
+                'intval',
+                $this->settings->default_valid_status_codes ?: [200, 301, 302],
+            ),
             'follow_redirects' => true,
             'verify_ssl' => true,
             'failure_threshold' => $this->settings->default_failure_threshold,

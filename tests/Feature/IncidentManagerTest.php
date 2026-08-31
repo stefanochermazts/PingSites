@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\DTOs\CheckResult;
 use App\Enums\ErrorType;
+use App\Enums\IncidentStatus;
 use App\Enums\MonitorStatus;
 use App\Models\Monitor;
 use App\Models\StatusPage;
@@ -128,7 +129,7 @@ class IncidentManagerTest extends TestCase
 
         $incident = $monitor->incidents()->create([
             'opened_at' => now()->subHour(),
-            'status' => \App\Enums\IncidentStatus::Open,
+            'status' => IncidentStatus::Open,
             'initial_cause' => 'Timeout',
             'last_error_type' => ErrorType::Timeout,
             'failed_checks_count' => 253,
@@ -170,5 +171,30 @@ class IncidentManagerTest extends TestCase
 
         $this->assertSame('operational', $data['monitors'][0]['status']);
         $this->assertSame('Operativo', $data['monitors'][0]['status_label']);
+    }
+
+    public function test_status_page_shows_operational_when_last_check_is_200_even_if_still_down(): void
+    {
+        $statusPage = StatusPage::query()->where('is_default', true)->firstOrFail();
+
+        Monitor::query()->create([
+            'name' => 'Sito in recovery',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Down,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito in recovery',
+            'valid_status_codes' => [200],
+            'last_checked_at' => now(),
+            'last_http_code' => 200,
+            'last_response_time_ms' => 74,
+            'last_error_type' => null,
+        ]);
+
+        $data = app(StatusPageService::class)->data($statusPage);
+
+        $this->assertSame('operational', $data['monitors'][0]['status']);
+        $this->assertSame('Operativo', $data['monitors'][0]['status_label']);
+        $this->assertNull($data['monitors'][0]['error_detail']);
     }
 }

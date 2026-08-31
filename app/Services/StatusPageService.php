@@ -353,7 +353,9 @@ class StatusPageService
         }
 
         return match ($monitor->status) {
-            MonitorStatus::Down => 'down',
+            MonitorStatus::Down => $this->inferredPublicStatus($monitor) === 'operational'
+                ? 'operational'
+                : 'down',
             MonitorStatus::Maintenance => 'maintenance',
             MonitorStatus::Online => 'operational',
             MonitorStatus::Unknown, MonitorStatus::Paused => $this->inferredPublicStatus($monitor),
@@ -386,23 +388,24 @@ class StatusPageService
             return null;
         }
 
+        if (! $monitor->last_error_type instanceof ErrorType) {
+            return null;
+        }
+
         $parts = [];
 
         if ($monitor->last_http_code) {
             $parts[] = 'HTTP '.$monitor->last_http_code;
         }
 
-        if ($monitor->last_error_type instanceof ErrorType) {
-            $httpErrorWithCode = $monitor->last_http_code !== null
-                && in_array($monitor->last_error_type, [
-                    ErrorType::Http4xx,
-                    ErrorType::Http5xx,
-                    ErrorType::InvalidHttpCode,
-                ], true);
+        $redundantHttpFamily = $monitor->last_http_code !== null
+            && in_array($monitor->last_error_type, [
+                ErrorType::Http4xx,
+                ErrorType::Http5xx,
+            ], true);
 
-            if (! $httpErrorWithCode) {
-                $parts[] = $monitor->last_error_type->label();
-            }
+        if (! $redundantHttpFamily) {
+            $parts[] = $monitor->last_error_type->label();
         }
 
         return $parts === [] ? null : implode(' · ', $parts);
