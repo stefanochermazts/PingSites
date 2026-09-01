@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-01T08:56:00.000Z",
+  "title": "Design System: PingSites Status",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Carta fredda", "canonical": "#f8fafc", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#e2e8f0", "#f8fafc"] },
+      "surface": { "role": "neutral", "displayName": "Superficie", "canonical": "#ffffff", "tonalRamp": ["#0f172a", "#334155", "#64748b", "#94a3b8", "#e2e8f0", "#f1f5f9", "#f8fafc", "#ffffff"] },
+      "ink": { "role": "primary", "displayName": "Inchiostro ardesia", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"] },
+      "signal-ok": { "role": "tertiary", "displayName": "Segnale OK", "canonical": "#059669", "tonalRamp": ["#064e3b", "#047857", "#059669", "#10b981", "#34d399", "#6ee7b7", "#d1fae5", "#ecfdf5"] },
+      "signal-warn": { "role": "tertiary", "displayName": "Segnale warn", "canonical": "#d97706", "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fde68a", "#fffbeb"] },
+      "signal-down": { "role": "tertiary", "displayName": "Segnale down", "canonical": "#dc2626", "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fecaca", "#fef2f2"] },
+      "link": { "role": "secondary", "displayName": "Link blu operativo", "canonical": "#2563eb", "tonalRamp": ["#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Titolo pagina o nome servizio." },
+      "headline": { "displayName": "Headline", "purpose": "KPI numerici sulla pagina dettaglio." },
+      "title": { "displayName": "Title", "purpose": "Intestazioni di sezione." },
+      "body": { "displayName": "Body", "purpose": "Tabella, chip, link." },
+      "label": { "displayName": "Label", "purpose": "Meta, URL, footnote, caption." }
+    },
+    "shadows": [
+      { "name": "ambient-card", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "Card bianche e stat a riposo. Non sui wash di allarme." }
+    ],
+    "motion": [
+      { "name": "chip-transition", "value": "transition", "purpose": "Hover dei chip filtro; Tailwind default, nessun reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Filter chip active",
+      "kind": "chip",
+      "refersTo": "chip-filter-active",
+      "description": "Filtro selezionato: fill inchiostro, testo bianco.",
+      "html": "<a class=\"ds-chip-active\" href=\"#\">Tutti <span>12</span></a>",
+      "css": ".ds-chip-active { display: inline-flex; align-items: center; gap: 0.375rem; border-radius: 9999px; padding: 0.25rem 0.75rem; background: #0f172a; color: #ffffff; font: 500 0.875rem/1.25 ui-sans-serif, system-ui, sans-serif; text-decoration: none; } .ds-chip-active span { font-variant-numeric: tabular-nums; color: #cbd5e1; } .ds-chip-active:hover { background: #0f172a; } .ds-chip-active:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter chip idle",
+      "kind": "chip",
+      "refersTo": "chip-filter-idle",
+      "description": "Filtro non selezionato.",
+      "html": "<a class=\"ds-chip-idle\" href=\"#\">Operativo <span>9</span></a>",
+      "css": ".ds-chip-idle { display: inline-flex; align-items: center; gap: 0.375rem; border-radius: 9999px; padding: 0.25rem 0.75rem; background: #f1f5f9; color: #475569; font: 500 0.875rem/1.25 ui-sans-serif, system-ui, sans-serif; text-decoration: none; transition: background-color 150ms ease; } .ds-chip-idle span { font-variant-numeric: tabular-nums; color: #94a3b8; } .ds-chip-idle:hover { background: #e2e8f0; } .ds-chip-idle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }"
+    },
+    {
+      "name": "Status badge operational",
+      "kind": "chip",
+      "refersTo": "status-operational",
+      "description": "Badge stato operativo.",
+      "html": "<span class=\"ds-badge-ok\">Operativo</span>",
+      "css": ".ds-badge-ok { display: inline-flex; border-radius: 9999px; padding: 0.25rem 0.75rem; background: #d1fae5; color: #047857; font: 500 0.875rem/1.25 ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Status badge down",
+      "kind": "chip",
+      "refersTo": "status-down",
+      "description": "Badge stato down.",
+      "html": "<span class=\"ds-badge-down\">Problemi rilevati</span>",
+      "css": ".ds-badge-down { display: inline-flex; border-radius: 9999px; padding: 0.25rem 0.75rem; background: #fee2e2; color: #b91c1c; font: 500 0.875rem/1.25 ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Service card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contenitore sezione su superficie.",
+      "html": "<section class=\"ds-card\"><h2>Servizi</h2><p>Tabella e filtri vivono qui.</p></section>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); color: #0f172a; font: 400 0.875rem/1.5 ui-sans-serif, system-ui, sans-serif; } .ds-card h2 { margin: 0 0 1rem; font: 600 1.25rem/1.4 ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Incident panel",
+      "kind": "card",
+      "refersTo": "card-incident",
+      "description": "Wash rosso per incidenti attivi.",
+      "html": "<section class=\"ds-card-incident\"><h2>Incidenti attivi</h2><p>Problema rilevato. Sono in corso verifiche.</p></section>",
+      "css": ".ds-card-incident { background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.75rem; padding: 1.5rem; color: #7f1d1d; font: 400 1rem/1.5 ui-sans-serif, system-ui, sans-serif; } .ds-card-incident h2 { margin: 0 0 1rem; color: #991b1b; font: 600 1.25rem/1.4 ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Text link",
+      "kind": "nav",
+      "refersTo": "link",
+      "description": "Azione primaria: link blu, non bottone.",
+      "html": "<a class=\"ds-link\" href=\"#\">Dettaglio</a>",
+      "css": ".ds-link { color: #2563eb; font: 500 0.875rem/1.25 ui-sans-serif, system-ui, sans-serif; text-decoration: none; } .ds-link:hover { color: #1e40af; } .ds-link:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }"
+    },
+    {
+      "name": "Stat card",
+      "kind": "card",
+      "refersTo": "stat-card",
+      "description": "KPI sulla pagina dettaglio.",
+      "html": "<div class=\"ds-stat\"><p class=\"ds-stat-label\">Disponibilità</p><p class=\"ds-stat-value\">99,8%</p><p class=\"ds-stat-meta\">Ultime 30 esecuzioni</p></div>",
+      "css": ".ds-stat { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); } .ds-stat-label { margin: 0; color: #64748b; font: 400 0.875rem/1.4 ui-sans-serif, system-ui, sans-serif; } .ds-stat-value { margin: 0.25rem 0 0; color: #059669; font: 700 1.5rem/1.25 ui-sans-serif, system-ui, sans-serif; } .ds-stat-meta { margin: 0.25rem 0 0; color: #94a3b8; font: 400 0.75rem/1.4 ui-sans-serif, system-ui, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Control Room",
+    "overview": "La status page pubblica è una sala operativa chiara: carta, inchiostro, e un semaforo che parla solo quando serve. Lo sfondo resta quieto; chip di filtro e badge di stato sono decisi — fill pieni, contrasto alto, nessuna decorazione intorno.\n\nIl cliente deve leggere lo stato in pochi secondi. Personalità: fattuale, tabellare, italiana. Filosofia: peso sul segnale, non sulla chrome. Anti-riferimento confermato: né dashboard SaaS (sidebar, KPI rainbow, illustration, gradient hero) né clone Statuspage/Atlassian (logo enorme, illustrazioni, footer da marketing).\n\nQuesto file documenta solo la status page pubblica. L’admin Filament è un vernacolo separato e non mescola token con questa pagina.",
+    "keyCharacteristics": [
+      "Carta fredda e inchiostro ardesia; il colore esiste per lo stato.",
+      "Chip e badge a pill, fill pieno, contrasto alto.",
+      "Card con bordo + ombra minima; wash rosso/ambra solo per allarme e manutenzione.",
+      "Tabella come oggetto primario; numeri in forma tabulare.",
+      "Link blu operativo, non un accento di brand."
+    ],
+    "rules": [
+      { "name": "The Signal Privilege Rule", "body": "Verde, ambra e rosso appaiono solo su stato, uptime, incidenti, manutenzioni e timeline. Se un elemento non comunica salute, resta ardesia.", "section": "colors" },
+      { "name": "The One Voice Rule", "body": "Il blu è solo navigazione. Non diventa brand fill, hero o bottone primario.", "section": "colors" },
+      { "name": "The One Sans Rule", "body": "Nessun serif, nessun display font, nessun logo wordmark sulla pagina pubblica.", "section": "typography" },
+      { "name": "The Five-Second Scan Rule", "body": "Titolo + overall status in header; tabella o KPI subito sotto. Niente hero, sidebar o footer di prodotto.", "section": "layout" },
+      { "name": "The Tone-Not-Lift Rule", "body": "Allarme = wash + bordo del segnale. Non alzare la card con un’ombra più pesante.", "section": "elevation" },
+      { "name": "The Pill Means State Rule", "body": "rounded-full è riservato a filtro e badge di stato. Le card non diventano capsule.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do tenere carta + inchiostro come default e spendere il colore solo sullo stato.",
+      "Do usare pill piene e contrasto alto su chip/badge.",
+      "Do far leggere header + tabella (o KPI) in un colpo, colonna max-w-5xl.",
+      "Do usare wash rosso/ambra per incidenti e manutenzioni, non per sezioni neutre."
+    ],
+    "donts": [
+      "Don't introdurre sidebar, gradient hero, illustration o KPI rainbow.",
+      "Don't copiare Statuspage/Atlassian (logo grande, mascotte, footer marketing).",
+      "Don't mescolare token Filament/admin in questa pagina.",
+      "Don't usare Instrument Sans qui: la pagina pubblica è system UI sans.",
+      "Don't inventare un bottone primario colorato: l’azione resta un link blu."
+    ]
+  }
+}

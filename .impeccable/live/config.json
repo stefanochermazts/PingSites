@@ -1,0 +1,7 @@
+{
+  "files": ["resources/views/status/*.blade.php"],
+  "exclude": ["resources/views/status/partials/**"],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}

@@ -131,6 +131,7 @@ class StatusPageService
             'monitor' => [
                 'id' => $monitor->id,
                 'name' => $monitor->displayPublicName(),
+                'url' => $monitor->url,
                 'status' => $this->publicMonitorStatus($monitor),
                 'status_label' => $this->publicMonitorStatusLabel($monitor),
                 'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
@@ -201,16 +202,16 @@ class StatusPageService
         $data['status_filter'] = $activeStatus;
         $data['publication_filter'] = $activePublication;
         $data['status_filters'] = [
-            $this->filterLink($statusPage, 'Tutti', $statusCounts['all'], $activeStatus === null, null, $activePublication),
+            $this->filterLink($statusPage, 'Tutti gli stati', $statusCounts['all'], $activeStatus === null, null, $activePublication),
             $this->filterLink($statusPage, 'Operativo', $statusCounts['operational'], $activeStatus === 'operational', 'operational', $activePublication),
             $this->filterLink($statusPage, 'Problemi rilevati', $statusCounts['down'], $activeStatus === 'down', 'down', $activePublication),
             $this->filterLink($statusPage, 'Manutenzione', $statusCounts['maintenance'], $activeStatus === 'maintenance', 'maintenance', $activePublication),
             $this->filterLink($statusPage, 'Stato non disponibile', $statusCounts['unknown'], $activeStatus === 'unknown', 'unknown', $activePublication),
         ];
         $data['publication_filters'] = [
-            $this->filterLink($statusPage, 'Tutti', $publicationCounts['all'], $activePublication === null, $activeStatus, null),
-            $this->filterLink($statusPage, 'Pubblicati', $publicationCounts['pubblicati'], $activePublication === 'pubblicati', $activeStatus, 'pubblicati'),
-            $this->filterLink($statusPage, 'Non pubblicati', $publicationCounts['non-pubblicati'], $activePublication === 'non-pubblicati', $activeStatus, 'non-pubblicati'),
+            $this->filterLink($statusPage, 'Tutti i servizi', $publicationCounts['all'], $activePublication === null, $activeStatus, null),
+            $this->filterLink($statusPage, 'Con dominio proprio', $publicationCounts['pubblicati'], $activePublication === 'pubblicati', $activeStatus, 'pubblicati'),
+            $this->filterLink($statusPage, 'Indirizzo temporaneo', $publicationCounts['non-pubblicati'], $activePublication === 'non-pubblicati', $activeStatus, 'non-pubblicati'),
         ];
 
         return $data;

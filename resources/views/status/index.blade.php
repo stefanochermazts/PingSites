@@ -1,214 +1,194 @@
 @use('App\Support\DisplayDate')
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-50 text-slate-900">
-<div class="min-h-screen">
-    <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto max-w-5xl px-4 py-8">
-            <h1 class="text-3xl font-bold">{{ $title }}</h1>
-            <p class="mt-2 text-lg @class([
-                'text-emerald-600' => $overall_status === 'operational',
-                'text-amber-600' => $overall_status === 'maintenance',
-                'text-red-600' => $overall_status === 'degraded',
-                'text-slate-500' => $overall_status === 'unavailable',
-            ])">{{ $overall_status_label }}</p>
-            @if($updated_at)
-                <p class="mt-1 text-sm text-slate-500">Ultimo aggiornamento: {{ DisplayDate::format($updated_at, 'd/m/Y H:i') }}</p>
-            @endif
+@extends('status.layout')
+
+@section('body')
+    <header class="status-mast status-mast--signal">
+        <div class="status-mast__inner">
+            <h1 class="status-mast__title">{{ $title }}</h1>
+            <div class="status-mast__readout">
+                <p @class(['status-signal', 'status-signal--'.$overall_status])>
+                    <span class="status-lamp" aria-hidden="true"></span>
+                    <span>{{ $overall_status_label }}</span>
+                </p>
+                @if($updated_at)
+                    <p class="status-stamp">Aggiornato {{ DisplayDate::format($updated_at, 'd/m/Y H:i') }}</p>
+                @endif
+            </div>
         </div>
+        <div @class(['status-mast__rail', 'status-mast__rail--'.$overall_status]) aria-hidden="true"></div>
     </header>
 
-    <main class="mx-auto max-w-5xl space-y-8 px-4 py-8">
-        <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="mb-4 flex flex-col gap-3">
-                <h2 class="text-xl font-semibold">Servizi</h2>
-                <div class="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+    <main id="contenuto" class="status-deck">
+        <section class="status-panel" aria-labelledby="servizi-heading">
+            <div class="status-panel__toolbar">
+                <h2 id="servizi-heading" class="status-panel__title">Servizi</h2>
+                <div class="status-filters">
                     @if(!empty($status_filters))
-                        <nav class="flex flex-wrap gap-2" aria-label="Filtra per stato">
-                            @foreach($status_filters as $filter)
-                                <a
-                                    href="{{ $filter['url'] }}"
-                                    @class([
-                                        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition',
-                                        'bg-slate-900 text-white' => $filter['active'],
-                                        'bg-slate-100 text-slate-600 hover:bg-slate-200' => ! $filter['active'],
-                                    ])
-                                >
-                                    <span>{{ $filter['label'] }}</span>
-                                    <span @class([
-                                        'tabular-nums',
-                                        'text-slate-300' => $filter['active'],
-                                        'text-slate-400' => ! $filter['active'],
-                                    ])>{{ $filter['count'] }}</span>
-                                </a>
-                            @endforeach
-                        </nav>
+                        <div class="status-filterbank">
+                            <p class="status-filterbank__label" id="filtro-stato-label">Stato</p>
+                            <nav class="status-chips" aria-labelledby="filtro-stato-label">
+                                @include('status.partials.filter-chips', ['filters' => $status_filters])
+                            </nav>
+                        </div>
                     @endif
                     @if(!empty($publication_filters))
-                        <nav class="flex flex-wrap gap-2" aria-label="Filtra per pubblicazione">
-                            @foreach($publication_filters as $filter)
-                                <a
-                                    href="{{ $filter['url'] }}"
-                                    @class([
-                                        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition',
-                                        'bg-slate-900 text-white' => $filter['active'],
-                                        'bg-slate-100 text-slate-600 hover:bg-slate-200' => ! $filter['active'],
-                                    ])
-                                >
-                                    <span>{{ $filter['label'] }}</span>
-                                    <span @class([
-                                        'tabular-nums',
-                                        'text-slate-300' => $filter['active'],
-                                        'text-slate-400' => ! $filter['active'],
-                                    ])>{{ $filter['count'] }}</span>
-                                </a>
-                            @endforeach
-                        </nav>
+                        <div class="status-filterbank">
+                            <p class="status-filterbank__label" id="filtro-indirizzo-label">Indirizzo</p>
+                            <nav class="status-chips" aria-labelledby="filtro-indirizzo-label">
+                                @include('status.partials.filter-chips', ['filters' => $publication_filters])
+                            </nav>
+                        </div>
                     @endif
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-left text-sm">
+            <div class="status-table-wrap">
+                <table class="status-table">
                     <thead>
-                        <tr class="border-b border-slate-200 text-slate-500">
-                            <th class="pb-3 pr-4 font-medium">Servizio</th>
-                            <th class="pb-3 pr-4 font-medium">Stato</th>
-                            <th class="hidden pb-3 pr-4 font-medium sm:table-cell">Ultimo controllo</th>
-                            <th class="hidden pb-3 pr-4 font-medium md:table-cell">Risposta</th>
-                            <th class="hidden pb-3 pr-4 font-medium lg:table-cell">Disponibilità</th>
-                            <th class="pb-3 font-medium"></th>
+                        <tr>
+                            <th>Servizio</th>
+                            <th>Stato</th>
+                            <th class="status-hide-sm">Ultimo controllo</th>
+                            <th class="status-hide-md">Risposta</th>
+                            <th class="status-hide-lg">Disponibilità</th>
+                            <th><span class="sr-only">Azioni</span></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody>
                         @forelse($monitors as $monitor)
-                            <tr class="align-middle">
-                                <td class="py-4 pr-4">
-                                    <div class="font-medium">{{ $monitor['name'] }}</div>
-                                    @if(!empty($monitor['url']))
-                                        <div class="mt-0.5 max-w-xs truncate text-xs font-normal text-slate-500" title="{{ $monitor['url'] }}">
-                                            {{ $monitor['url'] }}
-                                        </div>
-                                    @endif
+                            <tr>
+                                <td>
+                                    <div class="status-service">
+                                        <div class="status-service__name">{{ $monitor['name'] }}</div>
+                                        @if(!empty($monitor['url']))
+                                            <a
+                                                href="{{ $monitor['url'] }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="status-service__url"
+                                                title="{{ $monitor['url'] }}"
+                                            >
+                                                {{ $monitor['url'] }}
+                                                <span class="sr-only"> (si apre in una nuova scheda)</span>
+                                            </a>
+                                        @endif
+                                    </div>
                                 </td>
-                                <td class="py-4 pr-4">
+                                <td>
                                     @include('status.partials.status-badge', [
                                         'status' => $monitor['status'],
                                         'label' => $monitor['status_label'],
                                     ])
                                     @if(!empty($monitor['error_detail']))
-                                        <div class="mt-1 text-xs text-red-600">{{ $monitor['error_detail'] }}</div>
+                                        <p class="status-error">{{ $monitor['error_detail'] }}</p>
                                     @endif
                                 </td>
-                                <td class="hidden py-4 pr-4 text-slate-600 sm:table-cell">
+                                <td class="status-hide-sm is-num">
                                     @if($monitor['last_checked_at'])
                                         <span title="{{ DisplayDate::format($monitor['last_checked_at'], 'd/m/Y H:i:s') }}">
                                             {{ DisplayDate::parse($monitor['last_checked_at'])?->diffForHumans() }}
                                         </span>
                                     @else
-                                        <span class="text-slate-400">—</span>
+                                        <span class="is-empty">—</span>
                                     @endif
                                 </td>
-                                <td class="hidden py-4 pr-4 text-slate-600 md:table-cell">
+                                <td class="status-hide-md is-num">
                                     @if($monitor['last_response_time_ms'])
                                         {{ number_format($monitor['last_response_time_ms'], 0, ',', '.') }} ms
                                     @else
-                                        <span class="text-slate-400">—</span>
+                                        <span class="is-empty">—</span>
                                     @endif
                                 </td>
-                                <td class="hidden py-4 pr-4 lg:table-cell">
+                                <td class="status-hide-lg">
                                     @if($monitor['uptime_percent'] !== null)
                                         <span @class([
-                                            'font-medium',
-                                            'text-emerald-600' => $monitor['uptime_percent'] >= 99,
-                                            'text-amber-600' => $monitor['uptime_percent'] >= 95 && $monitor['uptime_percent'] < 99,
-                                            'text-red-600' => $monitor['uptime_percent'] < 95,
+                                            'status-uptime',
+                                            'status-uptime--ok' => $monitor['uptime_percent'] >= 99,
+                                            'status-uptime--warn' => $monitor['uptime_percent'] >= 95 && $monitor['uptime_percent'] < 99,
+                                            'status-uptime--down' => $monitor['uptime_percent'] < 95,
                                         ])>{{ number_format($monitor['uptime_percent'], 1, ',', '.') }}%</span>
-                                        <span class="text-slate-400"> / {{ $monitor['sample_size'] }} check</span>
+                                        <span class="status-uptime__sample"> / {{ $monitor['sample_size'] }} check</span>
                                     @else
-                                        <span class="text-slate-400">—</span>
+                                        <span class="is-empty">—</span>
                                     @endif
                                 </td>
-                                <td class="py-4 text-right">
-                                    <a href="{{ route('status.monitor', [$status_page['slug'], $monitor['id']]) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                                <td>
+                                    <a href="{{ route('status.monitor', [$status_page['slug'], $monitor['id']]) }}" class="status-action">
                                         Dettaglio
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-4 text-slate-500">
-                                    {{ !empty($status_filter) ? 'Nessun servizio con questo stato.' : 'Nessun servizio pubblicato.' }}
+                                <td colspan="6" class="is-empty">
+                                    {{ !empty($status_filter) ? 'Nessun servizio con questo stato.' : 'Nessun servizio in questa pagina.' }}
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <p class="mt-4 text-xs text-slate-400">La disponibilità è calcolata sulle ultime 30 esecuzioni per servizio.</p>
+            <p class="status-footnote">La disponibilità è calcolata sulle ultime 30 esecuzioni per servizio.</p>
         </section>
 
         @if(count($open_incidents) > 0)
-            <section class="rounded-xl border border-red-200 bg-red-50 p-6">
-                <h2 class="mb-4 text-xl font-semibold text-red-800">Incidenti attivi</h2>
-                <ul class="space-y-4">
-                    @foreach($open_incidents as $incident)
-                        <li>
-                            <p class="font-medium text-red-900">{{ $incident['name'] }}</p>
-                            <p class="text-red-700">{{ $incident['message'] }}</p>
-                        </li>
-                    @endforeach
-                </ul>
+            <section class="status-panel status-panel--wash-down" aria-labelledby="incidenti-heading">
+                <div class="status-panel__body">
+                    <h2 id="incidenti-heading" class="status-panel__title">Incidenti attivi</h2>
+                    <ul class="status-list">
+                        @foreach($open_incidents as $incident)
+                            <li>
+                                <p class="status-list__title">{{ $incident['name'] }}</p>
+                                <p class="status-list__copy">{{ $incident['message'] }}</p>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
             </section>
         @endif
 
         @if(count($maintenances) > 0)
-            <section class="rounded-xl border border-amber-200 bg-amber-50 p-6">
-                <h2 class="mb-4 text-xl font-semibold text-amber-900">Manutenzioni</h2>
-                <ul class="space-y-4">
-                    @foreach($maintenances as $maintenance)
-                        <li>
-                            <p class="font-medium text-amber-900">{{ $maintenance['title'] }}</p>
-                            <p class="text-amber-800">{{ $maintenance['message'] }}</p>
-                            <p class="text-sm text-amber-700">
-                                {{ DisplayDate::format($maintenance['starts_at'], 'd/m/Y H:i') }} -
-                                {{ DisplayDate::format($maintenance['ends_at'], 'd/m/Y H:i') }}
-                                @if($maintenance['is_active']) (in corso) @endif
-                            </p>
-                        </li>
-                    @endforeach
-                </ul>
+            <section class="status-panel status-panel--wash-warn" aria-labelledby="manutenzioni-heading">
+                <div class="status-panel__body">
+                    <h2 id="manutenzioni-heading" class="status-panel__title">Manutenzioni</h2>
+                    <ul class="status-list">
+                        @foreach($maintenances as $maintenance)
+                            <li>
+                                <p class="status-list__title">{{ $maintenance['title'] }}</p>
+                                <p class="status-list__copy">{{ $maintenance['message'] }}</p>
+                                <p class="status-list__meta">
+                                    {{ DisplayDate::format($maintenance['starts_at'], 'd/m/Y H:i') }} -
+                                    {{ DisplayDate::format($maintenance['ends_at'], 'd/m/Y H:i') }}
+                                    @if($maintenance['is_active']) (in corso) @endif
+                                </p>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
             </section>
         @endif
 
         @if(count($recent_incidents) > 0)
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 class="mb-4 text-xl font-semibold">Storico recente incidenti</h2>
-                <ul class="divide-y divide-slate-100">
-                    @foreach($recent_incidents as $incident)
-                        <li class="py-3">
-                            <div class="flex items-center justify-between gap-4">
-                                <span class="font-medium">{{ $incident['name'] }}</span>
-                                <span class="text-sm text-slate-500">{{ $incident['status'] }}</span>
-                            </div>
-                            <p class="text-sm text-slate-500">
-                                {{ DisplayDate::format($incident['opened_at'], 'd/m/Y H:i') }}
-                                @if($incident['closed_at'])
-                                    - {{ DisplayDate::format($incident['closed_at'], 'd/m/Y H:i') }}
-                                @endif
-                            </p>
-                        </li>
-                    @endforeach
-                </ul>
+            <section class="status-panel" aria-labelledby="storico-heading">
+                <div class="status-panel__body">
+                    <h2 id="storico-heading" class="status-panel__title">Storico recente incidenti</h2>
+                    <ul class="status-list status-list--ruled">
+                        @foreach($recent_incidents as $incident)
+                            <li>
+                                <div class="status-list__row">
+                                    <span class="status-list__title">{{ $incident['name'] }}</span>
+                                    <span class="status-muted">{{ $incident['status'] }}</span>
+                                </div>
+                                <p class="status-list__meta status-muted">
+                                    {{ DisplayDate::format($incident['opened_at'], 'd/m/Y H:i') }}
+                                    @if($incident['closed_at'])
+                                        - {{ DisplayDate::format($incident['closed_at'], 'd/m/Y H:i') }}
+                                    @endif
+                                </p>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
             </section>
         @endif
     </main>
-</div>
-@include('status.partials.auto-refresh')
-</body>
-</html>
+@endsection

@@ -202,6 +202,8 @@ class StatusPageTest extends TestCase
             ->assertOk()
             ->assertSee('https://down.example.com')
             ->assertSee('https://timeout.example.com')
+            ->assertSee('href="https://down.example.com"', false)
+            ->assertSee('href="https://timeout.example.com"', false)
             ->assertSee('HTTP 503')
             ->assertSee('Timeout')
             ->assertDontSee('http_5xx')
@@ -282,6 +284,8 @@ class StatusPageTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Sito A');
+        $response->assertSee('https://example.com');
+        $response->assertSee('href="https://example.com"', false);
         $response->assertSee('Tempi di risposta');
         $response->assertSee('120 ms');
         $response->assertDontSee('dns_error');
