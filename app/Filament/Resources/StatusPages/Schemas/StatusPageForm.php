@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\StatusPages\Schemas;
 
+use App\Rules\ValidAlertRecipients;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -50,6 +51,7 @@ class StatusPageForm
                         TextInput::make('alert_recipients')
                             ->label('Destinatari (separati da virgola)')
                             ->required()
+                            ->rules([new ValidAlertRecipients])
                             ->columnSpanFull()
                             ->helperText('Ricevono le email di down e recovery per i monitor di questa status page.'),
                     ]),

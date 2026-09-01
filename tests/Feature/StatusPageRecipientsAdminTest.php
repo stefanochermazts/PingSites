@@ -61,6 +61,23 @@ class StatusPageRecipientsAdminTest extends TestCase
             ->assertHasFormErrors(['alert_recipients']);
     }
 
+    public function test_status_page_form_rejects_invalid_recipient_emails(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        Livewire::test(CreateStatusPage::class)
+            ->fillForm([
+                'name' => 'Clienti',
+                'title' => 'Status Clienti',
+                'slug' => 'clienti',
+                'alert_recipients' => 'not-an-email, valid@ok.com',
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['alert_recipients']);
+    }
+
     public function test_status_page_edit_updates_recipients(): void
     {
         $user = User::factory()->create();

@@ -122,6 +122,20 @@ class NotificationServiceTest extends TestCase
         Mail::assertSent(MonitorDownMail::class, fn (MonitorDownMail $mail) => $mail->hasTo('admin@example.com'));
     }
 
+    public function test_duplicate_recipients_are_sent_only_once(): void
+    {
+        Mail::fake();
+
+        [$monitor, $incident] = $this->monitorWithIncident(
+            recipients: 'ops@example.com, ops@example.com',
+        );
+
+        app(NotificationService::class)->sendDownNotification($monitor->id, $incident->id);
+
+        Mail::assertSent(MonitorDownMail::class, 1);
+        Mail::assertSent(MonitorDownMail::class, fn (MonitorDownMail $mail) => $mail->hasTo('ops@example.com'));
+    }
+
     public function test_does_not_send_when_no_recipients_are_configured(): void
     {
         Mail::fake();
