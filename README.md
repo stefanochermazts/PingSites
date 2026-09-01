@@ -106,6 +106,8 @@ Dopo ogni modifica: `supervisorctl reread && supervisorctl update && supervisorc
 
 ### Produzione Cloudways
 
+Gli asset Vite si compilano in locale (`npm run build`) e si committano in `public/build`. Cloudways non esegue npm. Non committare `public/hot`.
+
 Nel `.env` di produzione:
 
 ```env
