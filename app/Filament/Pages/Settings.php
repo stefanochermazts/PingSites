@@ -46,7 +46,6 @@ class Settings extends Page
         $settings = app(MonitorSettings::class);
 
         $this->form->fill([
-            'alert_recipients' => $settings->alert_recipients,
             'mail_from_address' => $settings->mail_from_address,
             'mail_from_name' => $settings->mail_from_name,
             'default_check_frequency' => $settings->default_check_frequency,
@@ -66,12 +65,9 @@ class Settings extends Page
             ->components([
                 Form::make([
                     Section::make('Email alert')
+                        ->description('I destinatari delle notifiche si configurano su ciascuna status page. Mittente e nome restano globali.')
                         ->columns(2)
                         ->schema([
-                            TextInput::make('alert_recipients')
-                                ->label('Destinatari (separati da virgola)')
-                                ->required()
-                                ->columnSpanFull(),
                             TextInput::make('mail_from_address')
                                 ->label('Email mittente')
                                 ->email()

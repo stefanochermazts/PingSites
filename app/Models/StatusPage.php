@@ -13,6 +13,7 @@ class StatusPage extends Model
         'title',
         'slug',
         'is_default',
+        'alert_recipients',
     ];
 
     protected function casts(): array
@@ -55,5 +56,26 @@ class StatusPage extends Model
     public function publicUrl(): string
     {
         return url('/status/'.$this->slug);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function recipientEmails(): array
+    {
+        return self::parseRecipients($this->alert_recipients);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function parseRecipients(?string $raw): array
+    {
+        return collect(explode(',', (string) $raw))
+            ->map(fn (string $email) => trim($email))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

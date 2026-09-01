@@ -26,6 +26,11 @@ class StatusPagesTable
                     ->formatStateUsing(fn (string $state): string => '/status/'.$state)
                     ->copyable()
                     ->copyMessage('URL copiato'),
+                TextColumn::make('alert_recipients')
+                    ->label('Destinatari')
+                    ->limit(40)
+                    ->tooltip(fn (?string $state): ?string => $state)
+                    ->placeholder('Fallback globale'),
                 TextColumn::make('published_monitors_count')
                     ->label('Monitor pubblicati')
                     ->counts(['monitors as published_monitors_count' => fn ($query) => $query->where('published', true)])

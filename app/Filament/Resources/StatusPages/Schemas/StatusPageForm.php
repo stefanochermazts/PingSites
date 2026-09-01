@@ -45,6 +45,14 @@ class StatusPageForm
                             ->helperText('Usata quando si visita /status')
                             ->default(false),
                     ]),
+                Section::make('Email alert')
+                    ->schema([
+                        TextInput::make('alert_recipients')
+                            ->label('Destinatari (separati da virgola)')
+                            ->required()
+                            ->columnSpanFull()
+                            ->helperText('Ricevono le email di down e recovery per i monitor di questa status page.'),
+                    ]),
             ]);
     }
 }

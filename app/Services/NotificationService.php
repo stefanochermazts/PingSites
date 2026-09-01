@@ -10,6 +10,7 @@ use App\Mail\MonitorRecoveryMail;
 use App\Models\Incident;
 use App\Models\Monitor;
 use App\Models\NotificationLog;
+use App\Models\StatusPage;
 use App\Settings\MonitorSettings;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -23,10 +24,10 @@ class NotificationService
 
     public function sendDownNotification(int $monitorId, int $incidentId): void
     {
-        $monitor = Monitor::query()->findOrFail($monitorId);
+        $monitor = Monitor::query()->with('statusPage')->findOrFail($monitorId);
         $incident = Incident::query()->findOrFail($incidentId);
 
-        $recipients = $this->recipients();
+        $recipients = $this->recipients($monitor);
 
         foreach ($recipients as $recipient) {
             $subject = '[Monitor] Sito non disponibile: '.$monitor->name;
@@ -57,10 +58,10 @@ class NotificationService
 
     public function sendRecoveryNotification(int $monitorId, int $incidentId): void
     {
-        $monitor = Monitor::query()->findOrFail($monitorId);
+        $monitor = Monitor::query()->with('statusPage')->findOrFail($monitorId);
         $incident = Incident::query()->findOrFail($incidentId);
 
-        $recipients = $this->recipients();
+        $recipients = $this->recipients($monitor);
 
         foreach ($recipients as $recipient) {
             $subject = '[Monitor] Sito tornato online: '.$monitor->name;
@@ -92,13 +93,15 @@ class NotificationService
     /**
      * @return array<int, string>
      */
-    private function recipients(): array
+    private function recipients(Monitor $monitor): array
     {
-        return collect(explode(',', $this->settings->alert_recipients))
-            ->map(fn (string $email) => trim($email))
-            ->filter()
-            ->values()
-            ->all();
+        $fromStatusPage = $monitor->statusPage?->recipientEmails() ?? [];
+
+        if ($fromStatusPage !== []) {
+            return $fromStatusPage;
+        }
+
+        return StatusPage::parseRecipients($this->settings->alert_recipients);
     }
 
     private function logNotification(
