@@ -240,6 +240,53 @@ class StatusPageTest extends TestCase
             ->assertSee('Sito Cliente');
     }
 
+    public function test_publimedia_status_page_can_filter_infected_monitors(): void
+    {
+        $publimedia = StatusPage::query()->create([
+            'name' => 'Publimedia',
+            'title' => 'Publimedia Status',
+            'slug' => 'publimedia',
+            'is_default' => false,
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Infetto',
+            'url' => 'https://infected.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Sito Infetto',
+            'valid_status_codes' => [200],
+            'is_infected' => true,
+            'infection_checked_at' => now(),
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Pulito',
+            'url' => 'https://clean.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Sito Pulito',
+            'valid_status_codes' => [200],
+            'is_infected' => false,
+            'infection_checked_at' => now(),
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $publimedia))
+            ->assertOk()
+            ->assertSee('Sito Infetto')
+            ->assertSee('Sito Pulito')
+            ->assertSee('href="'.route('status.show', ['statusPage' => $publimedia, 'status' => 'infected']).'"', false);
+
+        $this->get(route('status.show', ['statusPage' => $publimedia, 'status' => 'infected']))
+            ->assertOk()
+            ->assertSee('Sito Infetto')
+            ->assertDontSee('Sito Pulito');
+    }
+
     public function test_other_status_pages_do_not_show_infection_column(): void
     {
         $statusPage = $this->defaultStatusPage();

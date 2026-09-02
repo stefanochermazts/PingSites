@@ -178,6 +178,9 @@ class StatusPageService
     public function applyStatusFilter(array $data, ?string $status, StatusPage $statusPage, ?string $publication = null): array
     {
         $allowedStatus = ['operational', 'down', 'maintenance', 'unknown'];
+        if ($statusPage->showsInfectionStatus()) {
+            $allowedStatus[] = 'infected';
+        }
         $activeStatus = is_string($status) && in_array($status, $allowedStatus, true) ? $status : null;
 
         $allowedPublication = ['pubblicati', 'non-pubblicati'];
@@ -189,7 +192,7 @@ class StatusPageService
 
         $matchingStatus = array_values(array_filter(
             $monitors,
-            fn (array $monitor): bool => $activeStatus === null || ($monitor['status'] ?? null) === $activeStatus,
+            fn (array $monitor): bool => $this->matchesStatus($monitor, $activeStatus),
         ));
         $matchingPublication = array_values(array_filter(
             $monitors,
@@ -198,7 +201,7 @@ class StatusPageService
 
         $data['monitors'] = array_values(array_filter(
             $matchingPublication,
-            fn (array $monitor): bool => $activeStatus === null || ($monitor['status'] ?? null) === $activeStatus,
+            fn (array $monitor): bool => $this->matchesStatus($monitor, $activeStatus),
         ));
 
         $statusCounts = $this->statusCounts($matchingPublication);
@@ -213,6 +216,17 @@ class StatusPageService
             $this->filterLink($statusPage, 'Manutenzione', $statusCounts['maintenance'], $activeStatus === 'maintenance', 'maintenance', $activePublication),
             $this->filterLink($statusPage, 'Stato non disponibile', $statusCounts['unknown'], $activeStatus === 'unknown', 'unknown', $activePublication),
         ];
+
+        if ($statusPage->showsInfectionStatus()) {
+            $data['status_filters'][] = $this->filterLink(
+                $statusPage,
+                'Infetto',
+                $statusCounts['infected'],
+                $activeStatus === 'infected',
+                'infected',
+                $activePublication,
+            );
+        }
         $data['publication_filters'] = [
             $this->filterLink($statusPage, 'Tutti i servizi', $publicationCounts['all'], $activePublication === null, $activeStatus, null),
             $this->filterLink($statusPage, 'Con dominio proprio', $publicationCounts['pubblicati'], $activePublication === 'pubblicati', $activeStatus, 'pubblicati'),
@@ -220,6 +234,22 @@ class StatusPageService
         ];
 
         return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $monitor
+     */
+    private function matchesStatus(array $monitor, ?string $status): bool
+    {
+        if ($status === null) {
+            return true;
+        }
+
+        if ($status === 'infected') {
+            return ($monitor['is_infected'] ?? null) === true;
+        }
+
+        return ($monitor['status'] ?? null) === $status;
     }
 
     /**
@@ -239,7 +269,7 @@ class StatusPageService
 
     /**
      * @param  list<array<string, mixed>>  $monitors
-     * @return array{all: int, operational: int, down: int, maintenance: int, unknown: int}
+     * @return array{all: int, operational: int, down: int, maintenance: int, unknown: int, infected: int}
      */
     private function statusCounts(array $monitors): array
     {
@@ -249,12 +279,17 @@ class StatusPageService
             'down' => 0,
             'maintenance' => 0,
             'unknown' => 0,
+            'infected' => 0,
         ];
 
         foreach ($monitors as $monitor) {
             $key = $monitor['status'] ?? null;
-            if (is_string($key) && array_key_exists($key, $counts)) {
+            if (is_string($key) && $key !== 'infected' && array_key_exists($key, $counts)) {
                 $counts[$key]++;
+            }
+
+            if (($monitor['is_infected'] ?? null) === true) {
+                $counts['infected']++;
             }
         }
 
