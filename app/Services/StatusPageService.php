@@ -66,7 +66,8 @@ class StatusPageService
             'title' => $statusPage->title,
             'overall_status' => $this->overallStatus($monitors, $maintenances),
             'overall_status_label' => $this->overallStatusLabel($monitors, $maintenances),
-            'monitors' => $monitors->map(function (Monitor $monitor) use ($recentChecksByMonitor) {
+            'shows_infection' => $statusPage->showsInfectionStatus(),
+            'monitors' => $monitors->map(function (Monitor $monitor) use ($recentChecksByMonitor, $statusPage) {
                 $checks = $recentChecksByMonitor->get($monitor->id, collect());
                 $stats = $this->checkStats($checks);
 
@@ -77,6 +78,10 @@ class StatusPageService
                     'status' => $this->publicMonitorStatus($monitor),
                     'status_label' => $this->publicMonitorStatusLabel($monitor),
                     'error_detail' => $this->publicErrorDetail($monitor),
+                    'is_infected' => $statusPage->showsInfectionStatus() ? $monitor->isInfected() : null,
+                    'infection_label' => $statusPage->showsInfectionStatus()
+                        ? $this->infectionLabel($monitor->isInfected())
+                        : null,
                     'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                     'last_response_time_ms' => $monitor->last_response_time_ms,
                     'uptime_percent' => $stats['uptime_percent'],
@@ -403,6 +408,15 @@ class StatusPageService
         }
 
         return 'operational';
+    }
+
+    private function infectionLabel(?bool $infected): string
+    {
+        return match ($infected) {
+            true => 'Infetto',
+            false => 'Pulito',
+            default => 'Non verificato',
+        };
     }
 
     private function overallStatusLabel(Collection $monitors, Collection $maintenances): string

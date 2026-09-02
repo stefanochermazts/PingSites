@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StatusPage extends Model
 {
+    public const INFECTION_SLUG = 'publimedia';
+
     protected $fillable = [
         'name',
         'title',
@@ -56,6 +58,11 @@ class StatusPage extends Model
     public function publicUrl(): string
     {
         return url('/status/'.$this->slug);
+    }
+
+    public function showsInfectionStatus(): bool
+    {
+        return $this->slug === self::INFECTION_SLUG;
     }
 
     /**

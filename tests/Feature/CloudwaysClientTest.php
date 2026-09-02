@@ -78,6 +78,41 @@ class CloudwaysClientTest extends TestCase
         app(CloudwaysClient::class)->listServers('bad-token');
     }
 
+    public function test_lists_security_suite_apps_across_pages(): void
+    {
+        Http::fake(function ($request) {
+            if (! str_contains($request->url(), '/server/security/100/apps')) {
+                return Http::response(['message' => 'unexpected'], 404);
+            }
+
+            $page = (int) ($request['page'] ?? 1);
+
+            if ($page === 1) {
+                return Http::response([
+                    'apps' => [
+                        ['id' => 111, 'mp_addon_active' => 1, 'infected' => 0],
+                    ],
+                    'pagination' => ['last_page' => 2],
+                ]);
+            }
+
+            return Http::response([
+                'apps' => [
+                    ['id' => 222, 'mp_addon_active' => 1, 'infected' => 1],
+                ],
+                'pagination' => ['last_page' => 2],
+            ]);
+        });
+
+        $apps = app(CloudwaysClient::class)->securityAppsForServer('100', 'test-token');
+
+        $this->assertCount(2, $apps);
+        $this->assertSame('111', (string) $apps[0]['id']);
+        $this->assertSame('222', (string) $apps[1]['id']);
+
+        Http::assertSentCount(2);
+    }
+
     /**
      * @return array<string, mixed>
      */

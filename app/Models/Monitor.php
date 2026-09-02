@@ -45,6 +45,8 @@ class Monitor extends Model
         'last_http_code',
         'last_response_time_ms',
         'last_error_type',
+        'is_infected',
+        'infection_checked_at',
     ];
 
     protected function casts(): array
@@ -59,6 +61,7 @@ class Monitor extends Model
             'last_checked_at' => 'datetime',
             'next_check_at' => 'datetime',
             'last_error_type' => ErrorType::class,
+            'infection_checked_at' => 'datetime',
         ];
     }
 
@@ -100,6 +103,17 @@ class Monitor extends Model
     public function displayPublicName(): string
     {
         return $this->public_name ?: $this->name;
+    }
+
+    public function isInfected(): ?bool
+    {
+        $value = $this->getAttributes()['is_infected'] ?? null;
+
+        if ($value === null) {
+            return null;
+        }
+
+        return (bool) $value;
     }
 
     public function scheduleNextCheck(?int $offsetSeconds = null): void

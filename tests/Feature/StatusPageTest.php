@@ -210,6 +210,61 @@ class StatusPageTest extends TestCase
             ->assertDontSee('dns_error');
     }
 
+    public function test_publimedia_status_page_shows_infection_column(): void
+    {
+        $publimedia = StatusPage::query()->create([
+            'name' => 'Publimedia',
+            'title' => 'Publimedia Status',
+            'slug' => 'publimedia',
+            'is_default' => false,
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Cliente',
+            'url' => 'https://cliente.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Sito Cliente',
+            'valid_status_codes' => [200],
+            'is_infected' => true,
+            'infection_checked_at' => now(),
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $publimedia))
+            ->assertOk()
+            ->assertSee('Infezione')
+            ->assertSee('Infetto')
+            ->assertSee('Sito Cliente');
+    }
+
+    public function test_other_status_pages_do_not_show_infection_column(): void
+    {
+        $statusPage = $this->defaultStatusPage();
+
+        Monitor::query()->create([
+            'name' => 'Sito A',
+            'url' => 'https://example.com',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito A',
+            'valid_status_codes' => [200],
+            'is_infected' => true,
+            'infection_checked_at' => now(),
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $statusPage))
+            ->assertOk()
+            ->assertSee('Sito A')
+            ->assertDontSee('Infezione')
+            ->assertDontSee('Infetto');
+    }
+
     public function test_status_page_lists_monitors_for_selected_page_only(): void
     {
         $default = $this->defaultStatusPage();

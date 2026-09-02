@@ -10,4 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('monitors:dispatch-checks')->everyMinute();
 Schedule::command('cloudways:sync-monitor-urls')->hourly();
+Schedule::command('monitors:check-infections')->hourly();
 Schedule::command('checks:prune')->dailyAt('02:30');

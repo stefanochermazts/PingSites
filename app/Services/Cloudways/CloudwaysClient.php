@@ -121,6 +121,41 @@ class CloudwaysClient
     /**
      * @return list<array<string, mixed>>
      */
+    public function securityAppsForServer(string $serverId, ?string $accessToken = null): array
+    {
+        $token = $this->resolveToken($accessToken);
+        $apps = [];
+        $page = 1;
+        $maxPages = 200;
+
+        do {
+            $payload = $this->get('/server/security/'.rawurlencode($serverId).'/apps', $token, ['page' => $page]);
+
+            if (! array_key_exists('apps', $payload) || ! is_array($payload['apps'])) {
+                throw new CloudwaysException('Risposta Security Suite senza elenco apps.');
+            }
+
+            foreach ($payload['apps'] as $app) {
+                if (is_array($app)) {
+                    $apps[] = $app;
+                }
+            }
+
+            $pagination = $payload['pagination'] ?? [];
+            $lastPage = is_array($pagination) ? (int) ($pagination['last_page'] ?? $page) : $page;
+            $page++;
+        } while ($page <= $lastPage && $page <= $maxPages);
+
+        if ($page <= $lastPage) {
+            throw new CloudwaysException("Paginazione Security Suite oltre il limite di {$maxPages} pagine.");
+        }
+
+        return $apps;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
     private function cachedServers(?string $accessToken): array
     {
         $token = $this->resolveToken($accessToken);
@@ -153,14 +188,15 @@ class CloudwaysClient
     }
 
     /**
+     * @param  array<string, mixed>  $query
      * @return array<string, mixed>
      */
-    private function get(string $path, string $token): array
+    private function get(string $path, string $token, array $query = []): array
     {
         $response = Http::timeout(30)
             ->acceptJson()
             ->withToken($token)
-            ->get(rtrim((string) config('cloudways.base_url'), '/').$path);
+            ->get(rtrim((string) config('cloudways.base_url'), '/').$path, $query);
 
         if (! $response->successful()) {
             throw new CloudwaysException(

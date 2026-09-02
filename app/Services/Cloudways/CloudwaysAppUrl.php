@@ -74,6 +74,21 @@ class CloudwaysAppUrl
         return trim((string) $value);
     }
 
+    public static function isTruthy(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (int) $value === 1;
+        }
+
+        $normalized = strtolower(self::stringValue($value));
+
+        return in_array($normalized, ['1', 'true', 'yes', 'on', 'enabled'], true);
+    }
+
     public static function isTemporaryCloudwaysUrl(?string $url): bool
     {
         if (! is_string($url) || $url === '') {

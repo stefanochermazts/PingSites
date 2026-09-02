@@ -47,6 +47,9 @@
                         <tr>
                             <th>Servizio</th>
                             <th>Stato</th>
+                            @if(!empty($shows_infection))
+                                <th>Infezione</th>
+                            @endif
                             <th class="status-hide-sm">Ultimo controllo</th>
                             <th class="status-hide-md">Risposta</th>
                             <th class="status-hide-lg">Disponibilità</th>
@@ -82,6 +85,20 @@
                                         <p class="status-error">{{ $monitor['error_detail'] }}</p>
                                     @endif
                                 </td>
+                                @if(!empty($shows_infection))
+                                    <td>
+                                        @if($monitor['is_infected'] === true)
+                                            @include('status.partials.status-badge', [
+                                                'status' => 'down',
+                                                'label' => $monitor['infection_label'],
+                                            ])
+                                        @elseif($monitor['is_infected'] === false)
+                                            <span class="status-muted">{{ $monitor['infection_label'] }}</span>
+                                        @else
+                                            <span class="is-empty">—</span>
+                                        @endif
+                                    </td>
+                                @endif
                                 <td class="status-hide-sm is-num">
                                     @if($monitor['last_checked_at'])
                                         <span title="{{ DisplayDate::format($monitor['last_checked_at'], 'd/m/Y H:i:s') }}">
@@ -119,7 +136,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="is-empty">
+                                <td colspan="{{ !empty($shows_infection) ? 7 : 6 }}" class="is-empty">
                                     {{ !empty($status_filter) ? 'Nessun servizio con questo stato.' : 'Nessun servizio in questa pagina.' }}
                                 </td>
                             </tr>
