@@ -89,6 +89,19 @@ class CloudwaysAppUrl
         return in_array($normalized, ['1', 'true', 'yes', 'on', 'enabled'], true);
     }
 
+    public static function isPositiveCount(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value) || (is_string($value) && is_numeric(trim($value)))) {
+            return (float) $value > 0;
+        }
+
+        return self::isTruthy($value);
+    }
+
     public static function isTemporaryCloudwaysUrl(?string $url): bool
     {
         if (! is_string($url) || $url === '') {

@@ -59,4 +59,36 @@ class CloudwaysAppUrlTest extends TestCase
         $this->assertFalse(CloudwaysAppUrl::isTemporaryCloudwaysUrl('https://www.cliente.it'));
         $this->assertFalse(CloudwaysAppUrl::isTemporaryCloudwaysUrl('https://notcloudwaysapps.com'));
     }
+
+    public function test_is_truthy_accepts_cloudways_flag_representations(): void
+    {
+        $this->assertTrue(CloudwaysAppUrl::isTruthy(true));
+        $this->assertTrue(CloudwaysAppUrl::isTruthy(1));
+        $this->assertTrue(CloudwaysAppUrl::isTruthy(1.0));
+        $this->assertTrue(CloudwaysAppUrl::isTruthy('1'));
+        $this->assertTrue(CloudwaysAppUrl::isTruthy('true'));
+        $this->assertTrue(CloudwaysAppUrl::isTruthy('yes'));
+        $this->assertTrue(CloudwaysAppUrl::isTruthy('on'));
+        $this->assertTrue(CloudwaysAppUrl::isTruthy('enabled'));
+
+        $this->assertFalse(CloudwaysAppUrl::isTruthy(false));
+        $this->assertFalse(CloudwaysAppUrl::isTruthy(0));
+        $this->assertFalse(CloudwaysAppUrl::isTruthy(2));
+        $this->assertFalse(CloudwaysAppUrl::isTruthy(null));
+        $this->assertFalse(CloudwaysAppUrl::isTruthy(''));
+        $this->assertFalse(CloudwaysAppUrl::isTruthy('0'));
+        $this->assertFalse(CloudwaysAppUrl::isTruthy('false'));
+        $this->assertFalse(CloudwaysAppUrl::isTruthy([]));
+    }
+
+    public function test_is_positive_count_treats_malware_file_counts_as_infected(): void
+    {
+        $this->assertTrue(CloudwaysAppUrl::isPositiveCount(829));
+        $this->assertTrue(CloudwaysAppUrl::isPositiveCount('35'));
+        $this->assertTrue(CloudwaysAppUrl::isPositiveCount(1));
+        $this->assertTrue(CloudwaysAppUrl::isPositiveCount(true));
+        $this->assertFalse(CloudwaysAppUrl::isPositiveCount(0));
+        $this->assertFalse(CloudwaysAppUrl::isPositiveCount('0'));
+        $this->assertFalse(CloudwaysAppUrl::isPositiveCount(null));
+    }
 }

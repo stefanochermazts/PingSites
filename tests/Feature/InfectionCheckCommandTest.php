@@ -33,9 +33,9 @@ class InfectionCheckCommandTest extends TestCase
         Http::fake([
             'https://api.cloudways.com/api/v2/server/security/100/apps*' => Http::response([
                 'apps' => [
-                    ['id' => 111, 'mp_addon_active' => 1, 'infected' => 0, 'infected_db' => 0],
-                    ['id' => 222, 'mp_addon_active' => 1, 'infected' => 1, 'infected_db' => 0],
-                    ['id' => 333, 'mp_addon_active' => 1, 'infected' => 1, 'infected_db' => 0],
+                    ['id' => 111, 'mp_addon_active' => 0, 'infected' => 0, 'infected_db' => 0],
+                    ['id' => 222, 'mp_addon_active' => 0, 'infected' => 829, 'infected_db' => 2],
+                    ['id' => 333, 'mp_addon_active' => 0, 'infected' => 35, 'infected_db' => 0],
                 ],
                 'pagination' => ['last_page' => 1],
             ]),
@@ -56,10 +56,10 @@ class InfectionCheckCommandTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_treats_inactive_protection_as_unknown(): void
+    public function test_treats_zero_file_counts_as_clean_even_without_addon(): void
     {
         $publimedia = $this->publimediaPage();
-        $monitor = $this->monitor($publimedia, 'Senza protezione', 'https://off.example', '100', '444');
+        $monitor = $this->monitor($publimedia, 'Senza addon', 'https://off.example', '100', '444');
 
         Http::fake([
             'https://api.cloudways.com/api/v2/server/security/100/apps*' => Http::response([
@@ -73,7 +73,7 @@ class InfectionCheckCommandTest extends TestCase
         $this->artisan('monitors:check-infections')
             ->assertSuccessful();
 
-        $this->assertNull($monitor->fresh()->isInfected());
+        $this->assertFalse($monitor->fresh()->isInfected());
         $this->assertNotNull($monitor->fresh()->infection_checked_at);
     }
 
