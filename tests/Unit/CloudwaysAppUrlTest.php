@@ -29,6 +29,20 @@ class CloudwaysAppUrlTest extends TestCase
         $this->assertSame('https://shop.example.com', $url);
     }
 
+    public function test_reads_temporary_fqdn_url(): void
+    {
+        $this->assertSame(
+            'https://wordpress-1633639-6599077.cloudwaysapps.com',
+            CloudwaysAppUrl::temporaryUrl([
+                'cname' => 'www.lanuovaenergia.com',
+                'app_fqdn' => 'wordpress-1633639-6599077.cloudwaysapps.com',
+            ]),
+        );
+        $this->assertNull(CloudwaysAppUrl::temporaryUrl([
+            'app_fqdn' => 'www.lanuovaenergia.com',
+        ]));
+    }
+
     public function test_falls_back_to_cloudways_fqdn(): void
     {
         $url = CloudwaysAppUrl::fromApp([

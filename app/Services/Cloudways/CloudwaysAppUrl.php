@@ -28,6 +28,21 @@ class CloudwaysAppUrl
     }
 
     /**
+     * @param  array<string, mixed>  $app
+     */
+    public static function temporaryUrl(array $app): ?string
+    {
+        $fqdn = self::stringValue($app['app_fqdn'] ?? null);
+        if ($fqdn === '') {
+            return null;
+        }
+
+        $url = self::absoluteUrl($fqdn);
+
+        return self::isTemporaryCloudwaysUrl($url) ? $url : null;
+    }
+
+    /**
      * @return list<string>
      */
     public static function aliases(mixed $aliases): array

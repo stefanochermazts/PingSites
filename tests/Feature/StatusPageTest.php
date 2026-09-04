@@ -462,6 +462,140 @@ class StatusPageTest extends TestCase
         $this->get(route('status.monitor', [$statusPage, $monitor]))->assertNotFound();
     }
 
+    public function test_status_page_sorts_numeric_columns_ascending_and_descending(): void
+    {
+        $statusPage = $this->defaultStatusPage();
+
+        $slow = Monitor::query()->create([
+            'name' => 'Sito Lento',
+            'url' => 'https://lento.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Lento',
+            'valid_status_codes' => [200],
+            'last_checked_at' => now()->subHours(3),
+            'last_response_time_ms' => 900,
+        ]);
+        $fast = Monitor::query()->create([
+            'name' => 'Sito Veloce',
+            'url' => 'https://veloce.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Veloce',
+            'valid_status_codes' => [200],
+            'last_checked_at' => now()->subMinute(),
+            'last_response_time_ms' => 80,
+        ]);
+
+        Check::query()->create([
+            'monitor_id' => $slow->id,
+            'success' => false,
+            'http_code' => 500,
+            'response_time_ms' => 900,
+            'checked_at' => now()->subMinutes(2),
+        ]);
+        Check::query()->create([
+            'monitor_id' => $fast->id,
+            'success' => true,
+            'http_code' => 200,
+            'response_time_ms' => 80,
+            'checked_at' => now()->subMinute(),
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $statusPage))
+            ->assertOk()
+            ->assertSee('ordina=risposta', false)
+            ->assertSee('ordina=controllo', false)
+            ->assertSee('ordina=disponibilita', false);
+
+        $this->get(route('status.show', [
+            'statusPage' => $statusPage,
+            'ordina' => 'risposta',
+            'dir' => 'desc',
+        ]))
+            ->assertOk()
+            ->assertSeeInOrder(['Sito Lento', 'Sito Veloce'])
+            ->assertSee('ordina=risposta', false)
+            ->assertSee('dir=asc', false);
+
+        $this->get(route('status.show', [
+            'statusPage' => $statusPage,
+            'ordina' => 'risposta',
+            'dir' => 'asc',
+        ]))
+            ->assertOk()
+            ->assertSeeInOrder(['Sito Veloce', 'Sito Lento']);
+
+        $this->get(route('status.show', [
+            'statusPage' => $statusPage,
+            'ordina' => 'controllo',
+            'dir' => 'asc',
+        ]))
+            ->assertOk()
+            ->assertSeeInOrder(['Sito Lento', 'Sito Veloce']);
+
+        $this->get(route('status.show', [
+            'statusPage' => $statusPage,
+            'ordina' => 'disponibilita',
+            'dir' => 'asc',
+        ]))
+            ->assertOk()
+            ->assertSeeInOrder(['Sito Lento', 'Sito Veloce']);
+    }
+
+    public function test_status_page_ignores_invalid_sort_and_keeps_filters(): void
+    {
+        $statusPage = $this->defaultStatusPage();
+
+        Monitor::query()->create([
+            'name' => 'Sito Online',
+            'url' => 'https://ok.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Online',
+            'valid_status_codes' => [200],
+            'last_response_time_ms' => 50,
+        ]);
+        Monitor::query()->create([
+            'name' => 'Sito Down',
+            'url' => 'https://ko.example',
+            'status' => MonitorStatus::Down,
+            'published' => true,
+            'status_page_id' => $statusPage->id,
+            'public_name' => 'Sito Down',
+            'valid_status_codes' => [200],
+            'last_response_time_ms' => 800,
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', [
+            'statusPage' => $statusPage,
+            'ordina' => 'nome',
+            'dir' => 'sideways',
+        ]))
+            ->assertOk()
+            ->assertSee('Sito Down')
+            ->assertSee('Sito Online');
+
+        $this->get(route('status.show', [
+            'statusPage' => $statusPage,
+            'status' => 'down',
+            'ordina' => 'risposta',
+            'dir' => 'desc',
+        ]))
+            ->assertOk()
+            ->assertSee('Sito Down')
+            ->assertDontSee('Sito Online')
+            ->assertSee('status=down', false)
+            ->assertSee('ordina=risposta', false);
+    }
+
     public function test_admin_panel_requires_authentication(): void
     {
         $this->get('/admin/monitors')->assertRedirect('/admin/login');

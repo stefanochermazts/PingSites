@@ -172,6 +172,154 @@ class SyncCloudwaysMonitorUrlsCommandTest extends TestCase
         $this->assertDatabaseCount('monitors', 2);
     }
 
+    public function test_removes_temporary_url_when_custom_domain_monitor_already_exists(): void
+    {
+        $statusPage = StatusPage::query()->where('is_default', true)->firstOrFail();
+
+        $temporary = Monitor::query()->create([
+            'name' => 'La nuova energia',
+            'url' => 'https://wordpress-1633639-6599077.cloudwaysapps.com',
+            'status' => MonitorStatus::Down,
+            'valid_status_codes' => [200],
+            'status_page_id' => $statusPage->id,
+            'published' => true,
+            'cloudways_server_id' => '1633639',
+            'cloudways_app_id' => '6599077',
+        ]);
+
+        $canonical = Monitor::query()->create([
+            'name' => 'La nuova energia',
+            'url' => 'https://www.lanuovaenergia.com',
+            'status' => MonitorStatus::Online,
+            'valid_status_codes' => [200],
+            'status_page_id' => $statusPage->id,
+            'published' => true,
+        ]);
+
+        Http::fake([
+            'https://api.cloudways.com/api/v2/server' => Http::response([
+                'servers' => [
+                    [
+                        'id' => '1633639',
+                        'label' => 'Publimedia01',
+                        'apps' => [
+                            [
+                                'id' => '6599077',
+                                'label' => 'La nuova energia',
+                                'cname' => 'www.lanuovaenergia.com',
+                                'app_fqdn' => 'wordpress-1633639-6599077.cloudwaysapps.com',
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->artisan('cloudways:sync-monitor-urls')
+            ->assertSuccessful()
+            ->expectsOutputToContain('rimossi: 1');
+
+        $this->assertDatabaseMissing('monitors', ['id' => $temporary->id]);
+        $this->assertDatabaseHas('monitors', [
+            'id' => $canonical->id,
+            'url' => 'https://www.lanuovaenergia.com',
+            'cloudways_server_id' => '1633639',
+            'cloudways_app_id' => '6599077',
+        ]);
+        $this->assertDatabaseCount('monitors', 1);
+    }
+
+    public function test_removes_orphan_temporary_url_when_linked_monitor_already_has_custom_domain(): void
+    {
+        $statusPage = StatusPage::query()->where('is_default', true)->firstOrFail();
+
+        Monitor::query()->create([
+            'name' => 'La nuova energia',
+            'url' => 'https://www.lanuovaenergia.com',
+            'status' => MonitorStatus::Online,
+            'valid_status_codes' => [200],
+            'status_page_id' => $statusPage->id,
+            'cloudways_server_id' => '1633639',
+            'cloudways_app_id' => '6599077',
+        ]);
+
+        $orphan = Monitor::query()->create([
+            'name' => 'La nuova energia',
+            'url' => 'https://wordpress-1633639-6599077.cloudwaysapps.com',
+            'status' => MonitorStatus::Down,
+            'valid_status_codes' => [200],
+            'status_page_id' => $statusPage->id,
+        ]);
+
+        Http::fake([
+            'https://api.cloudways.com/api/v2/server' => Http::response([
+                'servers' => [
+                    [
+                        'id' => '1633639',
+                        'label' => 'Publimedia01',
+                        'apps' => [
+                            [
+                                'id' => '6599077',
+                                'label' => 'La nuova energia',
+                                'cname' => 'www.lanuovaenergia.com',
+                                'app_fqdn' => 'wordpress-1633639-6599077.cloudwaysapps.com',
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->artisan('cloudways:sync-monitor-urls')
+            ->assertSuccessful()
+            ->expectsOutputToContain('rimossi: 1');
+
+        $this->assertDatabaseMissing('monitors', ['id' => $orphan->id]);
+        $this->assertDatabaseCount('monitors', 1);
+    }
+
+    public function test_keeps_temporary_url_when_it_is_still_the_public_address(): void
+    {
+        $statusPage = StatusPage::query()->where('is_default', true)->firstOrFail();
+
+        $monitor = Monitor::query()->create([
+            'name' => 'Staging WP',
+            'url' => 'https://wordpress-201-100.cloudwaysapps.com',
+            'status' => MonitorStatus::Online,
+            'valid_status_codes' => [200],
+            'status_page_id' => $statusPage->id,
+            'cloudways_server_id' => '100',
+            'cloudways_app_id' => '201',
+        ]);
+
+        Http::fake([
+            'https://api.cloudways.com/api/v2/server' => Http::response([
+                'servers' => [
+                    [
+                        'id' => '100',
+                        'label' => 'Publimedia01',
+                        'apps' => [
+                            [
+                                'id' => '201',
+                                'label' => 'Staging WP',
+                                'app_fqdn' => 'wordpress-201-100.cloudwaysapps.com',
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->artisan('cloudways:sync-monitor-urls')
+            ->assertSuccessful()
+            ->expectsOutputToContain('invariati: 1');
+
+        $this->assertDatabaseHas('monitors', [
+            'id' => $monitor->id,
+            'url' => 'https://wordpress-201-100.cloudwaysapps.com',
+        ]);
+    }
+
     public function test_skips_when_access_token_is_missing(): void
     {
         config(['cloudways.access_token' => null]);

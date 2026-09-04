@@ -175,8 +175,14 @@ class StatusPageService
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function applyStatusFilter(array $data, ?string $status, StatusPage $statusPage, ?string $publication = null): array
-    {
+    public function applyStatusFilter(
+        array $data,
+        ?string $status,
+        StatusPage $statusPage,
+        ?string $publication = null,
+        ?string $sort = null,
+        ?string $direction = null,
+    ): array {
         $allowedStatus = ['operational', 'down', 'maintenance', 'unknown'];
         if ($statusPage->showsInfectionStatus()) {
             $allowedStatus[] = 'infected';
@@ -187,6 +193,10 @@ class StatusPageService
         $activePublication = is_string($publication) && in_array($publication, $allowedPublication, true)
             ? $publication
             : null;
+
+        $allowedSort = ['controllo', 'risposta', 'disponibilita'];
+        $activeSort = is_string($sort) && in_array($sort, $allowedSort, true) ? $sort : null;
+        $activeDirection = $activeSort !== null && $direction === 'asc' ? 'asc' : ($activeSort !== null ? 'desc' : null);
 
         $monitors = is_array($data['monitors'] ?? null) ? $data['monitors'] : [];
 
@@ -209,12 +219,14 @@ class StatusPageService
 
         $data['status_filter'] = $activeStatus;
         $data['publication_filter'] = $activePublication;
+        $data['sort'] = $activeSort;
+        $data['sort_direction'] = $activeDirection;
         $data['status_filters'] = [
-            $this->filterLink($statusPage, 'Tutti gli stati', $statusCounts['all'], $activeStatus === null, null, $activePublication),
-            $this->filterLink($statusPage, 'Operativo', $statusCounts['operational'], $activeStatus === 'operational', 'operational', $activePublication),
-            $this->filterLink($statusPage, 'Problemi rilevati', $statusCounts['down'], $activeStatus === 'down', 'down', $activePublication),
-            $this->filterLink($statusPage, 'Manutenzione', $statusCounts['maintenance'], $activeStatus === 'maintenance', 'maintenance', $activePublication),
-            $this->filterLink($statusPage, 'Stato non disponibile', $statusCounts['unknown'], $activeStatus === 'unknown', 'unknown', $activePublication),
+            $this->filterLink($statusPage, 'Tutti gli stati', $statusCounts['all'], $activeStatus === null, null, $activePublication, $activeSort, $activeDirection),
+            $this->filterLink($statusPage, 'Operativo', $statusCounts['operational'], $activeStatus === 'operational', 'operational', $activePublication, $activeSort, $activeDirection),
+            $this->filterLink($statusPage, 'Problemi rilevati', $statusCounts['down'], $activeStatus === 'down', 'down', $activePublication, $activeSort, $activeDirection),
+            $this->filterLink($statusPage, 'Manutenzione', $statusCounts['maintenance'], $activeStatus === 'maintenance', 'maintenance', $activePublication, $activeSort, $activeDirection),
+            $this->filterLink($statusPage, 'Stato non disponibile', $statusCounts['unknown'], $activeStatus === 'unknown', 'unknown', $activePublication, $activeSort, $activeDirection),
         ];
 
         if ($statusPage->showsInfectionStatus()) {
@@ -225,13 +237,17 @@ class StatusPageService
                 $activeStatus === 'infected',
                 'infected',
                 $activePublication,
+                $activeSort,
+                $activeDirection,
             );
         }
         $data['publication_filters'] = [
-            $this->filterLink($statusPage, 'Tutti i servizi', $publicationCounts['all'], $activePublication === null, $activeStatus, null),
-            $this->filterLink($statusPage, 'Con dominio proprio', $publicationCounts['pubblicati'], $activePublication === 'pubblicati', $activeStatus, 'pubblicati'),
-            $this->filterLink($statusPage, 'Indirizzo temporaneo', $publicationCounts['non-pubblicati'], $activePublication === 'non-pubblicati', $activeStatus, 'non-pubblicati'),
+            $this->filterLink($statusPage, 'Tutti i servizi', $publicationCounts['all'], $activePublication === null, $activeStatus, null, $activeSort, $activeDirection),
+            $this->filterLink($statusPage, 'Con dominio proprio', $publicationCounts['pubblicati'], $activePublication === 'pubblicati', $activeStatus, 'pubblicati', $activeSort, $activeDirection),
+            $this->filterLink($statusPage, 'Indirizzo temporaneo', $publicationCounts['non-pubblicati'], $activePublication === 'non-pubblicati', $activeStatus, 'non-pubblicati', $activeSort, $activeDirection),
         ];
+        $data['column_sorts'] = $this->columnSorts($statusPage, $activeStatus, $activePublication, $activeSort, $activeDirection);
+        $data['monitors'] = $this->sortMonitors($data['monitors'], $activeSort, $activeDirection);
 
         return $data;
     }
@@ -330,7 +346,115 @@ class StatusPageService
         bool $active,
         ?string $status,
         ?string $publication,
+        ?string $sort = null,
+        ?string $direction = null,
     ): array {
+        return [
+            'label' => $label,
+            'count' => $count,
+            'active' => $active,
+            'url' => $this->listingUrl($statusPage, $status, $publication, $sort, $direction),
+        ];
+    }
+
+    /**
+     * @return array<string, array{label: string, url: string, active: bool, aria_sort: string}>
+     */
+    private function columnSorts(
+        StatusPage $statusPage,
+        ?string $status,
+        ?string $publication,
+        ?string $sort,
+        ?string $direction,
+    ): array {
+        $columns = [
+            'controllo' => 'Ultimo controllo',
+            'risposta' => 'Risposta',
+            'disponibilita' => 'Disponibilità',
+        ];
+
+        $headers = [];
+        foreach ($columns as $key => $label) {
+            $active = $sort === $key;
+            $nextDirection = $active && $direction === 'desc' ? 'asc' : 'desc';
+
+            $headers[$key] = [
+                'label' => $label,
+                'url' => $this->listingUrl($statusPage, $status, $publication, $key, $nextDirection),
+                'active' => $active,
+                'aria_sort' => $active
+                    ? ($direction === 'asc' ? 'ascending' : 'descending')
+                    : 'none',
+            ];
+        }
+
+        return $headers;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $monitors
+     * @return list<array<string, mixed>>
+     */
+    private function sortMonitors(array $monitors, ?string $sort, ?string $direction): array
+    {
+        if ($sort === null || $direction === null) {
+            return $monitors;
+        }
+
+        usort($monitors, function (array $left, array $right) use ($sort, $direction): int {
+            $leftValue = $this->sortValue($left, $sort);
+            $rightValue = $this->sortValue($right, $sort);
+
+            if ($leftValue === null && $rightValue === null) {
+                return 0;
+            }
+            if ($leftValue === null) {
+                return 1;
+            }
+            if ($rightValue === null) {
+                return -1;
+            }
+
+            $comparison = $leftValue <=> $rightValue;
+
+            return $direction === 'desc' ? -$comparison : $comparison;
+        });
+
+        return $monitors;
+    }
+
+    private function sortValue(array $monitor, string $sort): int|float|null
+    {
+        return match ($sort) {
+            'controllo' => $this->timestampValue($monitor['last_checked_at'] ?? null),
+            'risposta' => is_numeric($monitor['last_response_time_ms'] ?? null)
+                ? (float) $monitor['last_response_time_ms']
+                : null,
+            'disponibilita' => is_numeric($monitor['uptime_percent'] ?? null)
+                ? (float) $monitor['uptime_percent']
+                : null,
+            default => null,
+        };
+    }
+
+    private function timestampValue(mixed $value): ?int
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        $timestamp = strtotime($value);
+
+        return $timestamp === false ? null : $timestamp;
+    }
+
+    private function listingUrl(
+        StatusPage $statusPage,
+        ?string $status,
+        ?string $publication,
+        ?string $sort,
+        ?string $direction,
+    ): string {
         $params = ['statusPage' => $statusPage];
         if ($status !== null) {
             $params['status'] = $status;
@@ -338,13 +462,12 @@ class StatusPageService
         if ($publication !== null) {
             $params['pubblicazione'] = $publication;
         }
+        if ($sort !== null) {
+            $params['ordina'] = $sort;
+            $params['dir'] = $direction ?? 'desc';
+        }
 
-        return [
-            'label' => $label,
-            'count' => $count,
-            'active' => $active,
-            'url' => route('status.show', $params),
-        ];
+        return route('status.show', $params);
     }
 
     public static function forgetAllCaches(?Monitor $monitor = null): void

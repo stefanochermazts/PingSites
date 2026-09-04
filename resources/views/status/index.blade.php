@@ -50,9 +50,9 @@
                             @if(!empty($shows_infection))
                                 <th>Infezione</th>
                             @endif
-                            <th class="status-hide-sm">Ultimo controllo</th>
-                            <th class="status-hide-md">Risposta</th>
-                            <th class="status-hide-lg">Disponibilità</th>
+                            @include('status.partials.sort-header', ['key' => 'controllo', 'hide' => 'sm', 'label' => 'Ultimo controllo'])
+                            @include('status.partials.sort-header', ['key' => 'risposta', 'hide' => 'md', 'label' => 'Risposta'])
+                            @include('status.partials.sort-header', ['key' => 'disponibilita', 'hide' => 'lg', 'label' => 'Disponibilità'])
                             <th><span class="sr-only">Azioni</span></th>
                         </tr>
                     </thead>

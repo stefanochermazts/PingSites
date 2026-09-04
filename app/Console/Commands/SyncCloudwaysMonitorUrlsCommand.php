@@ -32,11 +32,12 @@ class SyncCloudwaysMonitorUrlsCommand extends Command
         }
 
         $this->info(sprintf(
-            'Sync Cloudways completato: aggiornati: %d, invariati: %d, creati: %d, collegati: %d, mancanti: %d, errori: %d',
+            'Sync Cloudways completato: aggiornati: %d, invariati: %d, creati: %d, collegati: %d, rimossi: %d, mancanti: %d, errori: %d',
             $result['updated'],
             $result['unchanged'],
             $result['created'],
             $result['linked'],
+            $result['removed'],
             $result['missing'],
             $result['failed'],
         ));

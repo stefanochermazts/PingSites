@@ -27,12 +27,16 @@ class StatusPageController extends Controller
 
         $status = $request->query('status');
         $publication = $request->query('pubblicazione');
+        $sort = $request->query('ordina');
+        $direction = $request->query('dir');
 
         $data = $statusPageService->applyStatusFilter(
             $data,
             is_string($status) ? $status : null,
             $statusPage,
             is_string($publication) ? $publication : null,
+            is_string($sort) ? $sort : null,
+            is_string($direction) ? $direction : null,
         );
 
         return view('status.index', $data);
