@@ -8,6 +8,7 @@ use App\Services\HttpChecker;
 use App\Services\IncidentManager;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -17,6 +18,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class MonitorsTable
 {
@@ -24,10 +26,16 @@ class MonitorsTable
     {
         return $table
             ->defaultSort('name')
+            ->searchPlaceholder('Cerca per nome, URL o stato')
             ->columns([
                 TextColumn::make('name')
                     ->label('Nome')
-                    ->searchable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where(function (Builder $query) use ($search): void {
+                            $query->where('name', 'like', "%{$search}%")
+                                ->orWhere('public_name', 'like', "%{$search}%");
+                        });
+                    })
                     ->sortable(),
                 TextColumn::make('url')
                     ->label('URL')
@@ -38,7 +46,18 @@ class MonitorsTable
                     ->label('Stato')
                     ->badge()
                     ->formatStateUsing(fn (?MonitorStatus $state) => $state?->label())
-                    ->color(fn (?MonitorStatus $state) => $state?->color()),
+                    ->color(fn (?MonitorStatus $state) => $state?->color())
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        $values = collect(MonitorStatus::cases())
+                            ->filter(fn (MonitorStatus $status): bool => str_contains(
+                                mb_strtolower($status->label().' '.$status->value),
+                                mb_strtolower(trim($search)),
+                            ))
+                            ->map(fn (MonitorStatus $status): string => $status->value)
+                            ->all();
+
+                        return $query->whereIn('status', $values !== [] ? $values : ['__none__']);
+                    }),
                 TextColumn::make('last_checked_at')
                     ->label('Ultimo controllo')
                     ->dateTime('d/m/Y H:i')
@@ -107,6 +126,7 @@ class MonitorsTable
                     }),
                 ViewAction::make(),
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

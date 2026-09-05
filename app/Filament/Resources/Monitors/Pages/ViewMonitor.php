@@ -6,6 +6,7 @@ use App\Filament\Resources\Monitors\MonitorResource;
 use App\Services\HttpChecker;
 use App\Services\IncidentManager;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -35,6 +36,7 @@ class ViewMonitor extends ViewRecord
                     $this->refreshFormData(['status', 'last_checked_at', 'last_http_code', 'last_response_time_ms', 'last_error_type']);
                 }),
             EditAction::make(),
+            DeleteAction::make(),
         ];
     }
 }
