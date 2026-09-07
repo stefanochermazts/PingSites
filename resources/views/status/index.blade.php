@@ -93,9 +93,14 @@
                                                     'status' => 'down',
                                                     'label' => $monitor['infection_label'],
                                                 ])
-                                                @if(!empty($monitor['infection_count']))
-                                                    <span class="status-infection__count is-num">{{ number_format($monitor['infection_count'], 0, ',', '.') }}</span>
-                                                @endif
+                                                <span class="status-infection__metrics">
+                                                    @if(($monitor['infection_count'] ?? 0) > 0)
+                                                        <span class="status-infection__metric status-infection__metric--files">{{ number_format($monitor['infection_count'], 0, ',', '.') }} file</span>
+                                                    @endif
+                                                    @if(($monitor['infection_db_count'] ?? 0) > 0)
+                                                        <span class="status-infection__metric status-infection__metric--db">{{ number_format($monitor['infection_db_count'], 0, ',', '.') }} DB</span>
+                                                    @endif
+                                                </span>
                                             </div>
                                         @elseif($monitor['is_infected'] === false)
                                             <span class="status-muted">{{ $monitor['infection_label'] }}</span>

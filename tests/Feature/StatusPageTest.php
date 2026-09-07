@@ -229,6 +229,7 @@ class StatusPageTest extends TestCase
             'valid_status_codes' => [200],
             'is_infected' => true,
             'infection_count' => 829,
+            'infection_db_count' => 2,
             'infection_checked_at' => now(),
         ]);
 
@@ -238,7 +239,8 @@ class StatusPageTest extends TestCase
             ->assertOk()
             ->assertSee('Infezione')
             ->assertSee('Infetto')
-            ->assertSee('829')
+            ->assertSee('829 file')
+            ->assertSee('2 DB')
             ->assertSee('Sito Cliente');
     }
 

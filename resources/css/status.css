@@ -500,15 +500,30 @@ body.status-body {
 
 .status-infection {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.55rem;
+    white-space: nowrap;
 }
 
-.status-infection__count {
-    color: var(--status-down);
+.status-infection__metrics {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    white-space: nowrap;
+}
+
+.status-infection__metric {
+    font-size: 0.75rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+}
+
+.status-infection__metric--files {
+    color: var(--status-down);
+}
+
+.status-infection__metric--db {
+    color: var(--status-warn);
 }
 
 .status-muted {

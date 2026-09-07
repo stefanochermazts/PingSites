@@ -56,7 +56,8 @@ class CheckCloudwaysInfectionsAction
 
             $status = $catalog->forApp((string) $monitor->cloudways_app_id);
             $monitor->is_infected = $status->infected;
-            $monitor->infection_count = $status->count;
+            $monitor->infection_count = $status->files;
+            $monitor->infection_db_count = $status->database;
             $monitor->infection_checked_at = now();
             $monitor->save();
             $result['updated']++;

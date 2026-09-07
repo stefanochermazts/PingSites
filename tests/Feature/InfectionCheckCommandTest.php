@@ -45,10 +45,12 @@ class InfectionCheckCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertTrue($infected->fresh()->isInfected());
-        $this->assertSame(831, $infected->fresh()->infection_count);
+        $this->assertSame(829, $infected->fresh()->infection_count);
+        $this->assertSame(2, $infected->fresh()->infection_db_count);
         $this->assertNotNull($infected->fresh()->infection_checked_at);
         $this->assertFalse($clean->fresh()->isInfected());
         $this->assertSame(0, $clean->fresh()->infection_count);
+        $this->assertSame(0, $clean->fresh()->infection_db_count);
         $this->assertNotNull($clean->fresh()->infection_checked_at);
         $this->assertNull($unlinked->fresh()->isInfected());
         $this->assertNull($unlinked->fresh()->infection_checked_at);

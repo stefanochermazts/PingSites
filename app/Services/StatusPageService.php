@@ -80,6 +80,7 @@ class StatusPageService
                     'error_detail' => $this->publicErrorDetail($monitor),
                     'is_infected' => $statusPage->showsInfectionStatus() ? $monitor->isInfected() : null,
                     'infection_count' => $statusPage->showsInfectionStatus() ? $monitor->infection_count : null,
+                    'infection_db_count' => $statusPage->showsInfectionStatus() ? $monitor->infection_db_count : null,
                     'infection_label' => $statusPage->showsInfectionStatus()
                         ? $this->infectionLabel($monitor->isInfected())
                         : null,
