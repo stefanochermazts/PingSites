@@ -88,10 +88,15 @@
                                 @if(!empty($shows_infection))
                                     <td>
                                         @if($monitor['is_infected'] === true)
-                                            @include('status.partials.status-badge', [
-                                                'status' => 'down',
-                                                'label' => $monitor['infection_label'],
-                                            ])
+                                            <div class="status-infection">
+                                                @include('status.partials.status-badge', [
+                                                    'status' => 'down',
+                                                    'label' => $monitor['infection_label'],
+                                                ])
+                                                @if(!empty($monitor['infection_count']))
+                                                    <span class="status-infection__count is-num">{{ number_format($monitor['infection_count'], 0, ',', '.') }}</span>
+                                                @endif
+                                            </div>
                                         @elseif($monitor['is_infected'] === false)
                                             <span class="status-muted">{{ $monitor['infection_label'] }}</span>
                                         @else

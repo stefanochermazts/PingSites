@@ -498,6 +498,19 @@ body.status-body {
     font-size: 0.75rem;
 }
 
+.status-infection {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.status-infection__count {
+    color: var(--status-down);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
 .status-muted {
     color: var(--status-ink-muted);
 }

@@ -79,6 +79,7 @@ class StatusPageService
                     'status_label' => $this->publicMonitorStatusLabel($monitor),
                     'error_detail' => $this->publicErrorDetail($monitor),
                     'is_infected' => $statusPage->showsInfectionStatus() ? $monitor->isInfected() : null,
+                    'infection_count' => $statusPage->showsInfectionStatus() ? $monitor->infection_count : null,
                     'infection_label' => $statusPage->showsInfectionStatus()
                         ? $this->infectionLabel($monitor->isInfected())
                         : null,

@@ -46,6 +46,7 @@ class Monitor extends Model
         'last_response_time_ms',
         'last_error_type',
         'is_infected',
+        'infection_count',
         'infection_checked_at',
     ];
 
@@ -61,6 +62,7 @@ class Monitor extends Model
             'last_checked_at' => 'datetime',
             'next_check_at' => 'datetime',
             'last_error_type' => ErrorType::class,
+            'infection_count' => 'integer',
             'infection_checked_at' => 'datetime',
         ];
     }
