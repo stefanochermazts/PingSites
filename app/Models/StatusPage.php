@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StatusPage extends Model
 {
-    public const INFECTION_SLUG = 'publimedia';
+    public const PUBLIMEDIA_SLUG = 'publimedia';
+
+    public const INFECTION_SLUG = self::PUBLIMEDIA_SLUG;
 
     protected $fillable = [
         'name',
@@ -62,7 +64,12 @@ class StatusPage extends Model
 
     public function showsInfectionStatus(): bool
     {
-        return $this->slug === self::INFECTION_SLUG;
+        return $this->slug === self::PUBLIMEDIA_SLUG;
+    }
+
+    public function showsWordpressTheme(): bool
+    {
+        return $this->slug === self::PUBLIMEDIA_SLUG;
     }
 
     /**

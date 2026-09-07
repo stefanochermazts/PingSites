@@ -50,6 +50,9 @@
                             @if(!empty($shows_infection))
                                 <th>Infezione</th>
                             @endif
+                            @if(!empty($shows_wordpress_theme))
+                                <th>Tema</th>
+                            @endif
                             @include('status.partials.sort-header', ['key' => 'controllo', 'hide' => 'sm', 'label' => 'Ultimo controllo'])
                             @include('status.partials.sort-header', ['key' => 'risposta', 'hide' => 'md', 'label' => 'Risposta'])
                             @include('status.partials.sort-header', ['key' => 'disponibilita', 'hide' => 'lg', 'label' => 'Disponibilità'])
@@ -109,6 +112,20 @@
                                         @endif
                                     </td>
                                 @endif
+                                @if(!empty($shows_wordpress_theme))
+                                    <td>
+                                        @if(!empty($monitor['wordpress_theme']))
+                                            <span
+                                                class="status-theme"
+                                                @if(!empty($monitor['wordpress_theme_slug']))
+                                                    title="{{ $monitor['wordpress_theme_slug'] }}"
+                                                @endif
+                                            >{{ $monitor['wordpress_theme'] }}</span>
+                                        @else
+                                            <span class="is-empty">—</span>
+                                        @endif
+                                    </td>
+                                @endif
                                 <td class="status-hide-sm is-num">
                                     @if($monitor['last_checked_at'])
                                         <span title="{{ DisplayDate::format($monitor['last_checked_at'], 'd/m/Y H:i:s') }}">
@@ -146,7 +163,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ !empty($shows_infection) ? 7 : 6 }}" class="is-empty">
+                                <td colspan="{{ 6 + (!empty($shows_infection) ? 1 : 0) + (!empty($shows_wordpress_theme) ? 1 : 0) }}" class="is-empty">
                                     {{ !empty($status_filter) ? 'Nessun servizio con questo stato.' : 'Nessun servizio in questa pagina.' }}
                                 </td>
                             </tr>

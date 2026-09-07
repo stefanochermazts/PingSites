@@ -78,6 +78,14 @@
                     @endif
                 </p>
             </div>
+            @if(!empty($shows_wordpress_theme))
+                <div class="status-instrument">
+                    <p class="status-instrument__label">Tema</p>
+                    <p @class(['status-instrument__value', 'status-muted' => empty($monitor['wordpress_theme'])])>
+                        {{ $monitor['wordpress_theme'] ?: '—' }}
+                    </p>
+                </div>
+            @endif
         </section>
 
         @if(count($checks) > 0)

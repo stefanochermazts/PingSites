@@ -49,6 +49,9 @@ class Monitor extends Model
         'infection_count',
         'infection_db_count',
         'infection_checked_at',
+        'wordpress_theme',
+        'wordpress_theme_slug',
+        'wordpress_theme_checked_at',
     ];
 
     protected function casts(): array
@@ -66,6 +69,7 @@ class Monitor extends Model
             'infection_count' => 'integer',
             'infection_db_count' => 'integer',
             'infection_checked_at' => 'datetime',
+            'wordpress_theme_checked_at' => 'datetime',
         ];
     }
 

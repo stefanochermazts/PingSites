@@ -526,6 +526,16 @@ body.status-body {
     color: var(--status-warn);
 }
 
+.status-theme {
+    display: block;
+    max-width: 12.5rem;
+    overflow: hidden;
+    color: var(--status-ink-secondary);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .status-muted {
     color: var(--status-ink-muted);
 }

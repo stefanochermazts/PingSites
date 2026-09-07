@@ -67,6 +67,7 @@ class StatusPageService
             'overall_status' => $this->overallStatus($monitors, $maintenances),
             'overall_status_label' => $this->overallStatusLabel($monitors, $maintenances),
             'shows_infection' => $statusPage->showsInfectionStatus(),
+            'shows_wordpress_theme' => $statusPage->showsWordpressTheme(),
             'monitors' => $monitors->map(function (Monitor $monitor) use ($recentChecksByMonitor, $statusPage) {
                 $checks = $recentChecksByMonitor->get($monitor->id, collect());
                 $stats = $this->checkStats($checks);
@@ -84,6 +85,8 @@ class StatusPageService
                     'infection_label' => $statusPage->showsInfectionStatus()
                         ? $this->infectionLabel($monitor->isInfected())
                         : null,
+                    'wordpress_theme' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme : null,
+                    'wordpress_theme_slug' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme_slug : null,
                     'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                     'last_response_time_ms' => $monitor->last_response_time_ms,
                     'uptime_percent' => $stats['uptime_percent'],
@@ -143,7 +146,9 @@ class StatusPageService
                 'status_label' => $this->publicMonitorStatusLabel($monitor),
                 'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                 'last_response_time_ms' => $monitor->last_response_time_ms,
+                'wordpress_theme' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme : null,
             ],
+            'shows_wordpress_theme' => $statusPage->showsWordpressTheme(),
             'stats' => $stats,
             'checks' => $checks->map(fn (Check $check) => $this->publicCheckPayload($check))->values()->all(),
             'chart' => [

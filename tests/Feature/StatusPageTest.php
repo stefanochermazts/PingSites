@@ -313,7 +313,48 @@ class StatusPageTest extends TestCase
             ->assertOk()
             ->assertSee('Sito A')
             ->assertDontSee('Infezione')
-            ->assertDontSee('Infetto');
+            ->assertDontSee('Infetto')
+            ->assertDontSee('Tema');
+    }
+
+    public function test_publimedia_status_page_shows_wordpress_theme_column(): void
+    {
+        $publimedia = StatusPage::query()->create([
+            'name' => 'Publimedia',
+            'title' => 'Publimedia Status',
+            'slug' => 'publimedia',
+            'is_default' => false,
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Cliente',
+            'url' => 'https://cliente.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Sito Cliente',
+            'valid_status_codes' => [200],
+            'wordpress_theme' => 'Hello Elementor',
+            'wordpress_theme_slug' => 'hello-elementor',
+            'wordpress_theme_checked_at' => now(),
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $publimedia))
+            ->assertOk()
+            ->assertSee('Tema')
+            ->assertSee('Hello Elementor')
+            ->assertSee('Sito Cliente');
+
+        Cache::flush();
+
+        $monitor = Monitor::query()->where('url', 'https://cliente.example')->firstOrFail();
+
+        $this->get(route('status.monitor', [$publimedia, $monitor]))
+            ->assertOk()
+            ->assertSee('Tema')
+            ->assertSee('Hello Elementor');
     }
 
     public function test_status_page_lists_monitors_for_selected_page_only(): void
