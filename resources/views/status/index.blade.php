@@ -42,7 +42,7 @@
                 </div>
             </div>
             <div class="status-table-wrap">
-                <table class="status-table">
+                <table class="status-table status-table--services">
                     <thead>
                         <tr>
                             <th>Servizio</th>

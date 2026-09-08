@@ -198,7 +198,7 @@ Inchiostro ardesia per struttura; segnale verde/ambra/rosso per lo stato; blu so
 
 ## Layout
 
-Colonna unica `max-w-5xl` (64rem) centrata, padding pagina `1rem` / `2rem`, stack verticale `2rem`. Header a tutta larghezza su superficie, bordo inferiore `rule`. Main: card impilate.
+Colonna unica `max-w-7xl` (80rem) centrata, padding pagina `1rem` / `2rem`, stack verticale `2rem`. Header allineato alla stessa misura. Main: card impilate. La misura serve la tabella servizi (stato, infezione, tema, tempi, disponibilità, dettaglio), non un testo in prosa.
 
 Tabella servizi: colonne progressive — Ultimo controllo da `sm`, Risposta da `md`, Disponibilità da `lg`. Filtri: wrap a pill; da `lg` stato e pubblicazione sulla stessa riga.
 
@@ -255,7 +255,7 @@ Barra `2rem`, segmenti flex: `signal-ok-bar` / `signal-down-bar`. Dettaglio solo
 ### Do:
 - **Do** tenere carta + inchiostro come default e spendere il colore solo sullo stato.
 - **Do** usare pill piene e contrasto alto su chip/badge.
-- **Do** far leggere header + tabella (o KPI) in un colpo, colonna `max-w-5xl`.
+- **Do** far leggere header + tabella (o KPI) in un colpo, colonna `max-w-7xl`.
 - **Do** usare wash rosso/ambra per incidenti e manutenzioni, non per sezioni neutre.
 
 ### Don't:

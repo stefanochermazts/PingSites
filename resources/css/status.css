@@ -37,7 +37,7 @@
     --status-link-hover: #1e40af;
     --status-focus: #2563eb;
     --status-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.04);
-    --status-measure: 64rem;
+    --status-measure: 80rem;
     --status-radius: 0.75rem;
     --status-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -560,6 +560,13 @@ body.status-body {
 .status-uptime__sample {
     color: var(--status-ink-muted);
     font-weight: 400;
+}
+
+.status-table--services th:last-child,
+.status-table--services td:last-child {
+    width: 1%;
+    white-space: nowrap;
+    padding-inline-end: 1.35rem;
 }
 
 .status-action {

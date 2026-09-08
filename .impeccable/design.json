@@ -118,7 +118,7 @@
     "dos": [
       "Do tenere carta + inchiostro come default e spendere il colore solo sullo stato.",
       "Do usare pill piene e contrasto alto su chip/badge.",
-      "Do far leggere header + tabella (o KPI) in un colpo, colonna max-w-5xl.",
+      "Do far leggere header + tabella (o KPI) in un colpo, colonna max-w-7xl.",
       "Do usare wash rosso/ambra per incidenti e manutenzioni, non per sezioni neutre."
     ],
     "donts": [
