@@ -320,7 +320,7 @@ body.status-body {
 
 @media (min-width: 1024px) {
     .status-filters {
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: start;
         gap: 1.5rem;
     }
@@ -526,14 +526,26 @@ body.status-body {
     color: var(--status-warn);
 }
 
-.status-theme {
+.status-theme,
+.status-version {
     display: block;
     max-width: 12.5rem;
     overflow: hidden;
     color: var(--status-ink-secondary);
     font-weight: 600;
+    text-decoration: none;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.status-theme:hover,
+.status-version:hover {
+    color: var(--status-link);
+    text-decoration: underline;
+}
+
+.status-version {
+    font-variant-numeric: tabular-nums;
 }
 
 .status-muted {

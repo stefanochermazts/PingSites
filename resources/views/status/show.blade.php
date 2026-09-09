@@ -86,6 +86,14 @@
                     </p>
                 </div>
             @endif
+            @if(!empty($shows_wordpress_version))
+                <div class="status-instrument">
+                    <p class="status-instrument__label">Versione</p>
+                    <p @class(['status-instrument__value', 'status-muted' => empty($monitor['wordpress_version'])])>
+                        {{ $monitor['wordpress_version'] ?: '—' }}
+                    </p>
+                </div>
+            @endif
         </section>
 
         @if(count($checks) > 0)

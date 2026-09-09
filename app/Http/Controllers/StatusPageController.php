@@ -29,6 +29,8 @@ class StatusPageController extends Controller
         $publication = $request->query('pubblicazione');
         $sort = $request->query('ordina');
         $direction = $request->query('dir');
+        $theme = $request->query('tema');
+        $version = $request->query('versione');
 
         $data = $statusPageService->applyStatusFilter(
             $data,
@@ -37,6 +39,8 @@ class StatusPageController extends Controller
             is_string($publication) ? $publication : null,
             is_string($sort) ? $sort : null,
             is_string($direction) ? $direction : null,
+            is_string($theme) ? $theme : null,
+            is_string($version) ? $version : null,
         );
 
         return view('status.index', $data);

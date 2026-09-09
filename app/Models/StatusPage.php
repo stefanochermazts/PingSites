@@ -72,6 +72,11 @@ class StatusPage extends Model
         return $this->slug === self::PUBLIMEDIA_SLUG;
     }
 
+    public function showsWordpressVersion(): bool
+    {
+        return $this->showsWordpressTheme();
+    }
+
     /**
      * @return array<int, string>
      */

@@ -6,6 +6,7 @@ use App\Models\Monitor;
 use App\Models\StatusPage;
 use App\Services\Wordpress\WordpressTheme;
 use App\Services\Wordpress\WordpressThemeParser;
+use App\Services\Wordpress\WordpressVersionParser;
 use App\Settings\MonitorSettings;
 use App\Support\SsrfGuard;
 use InvalidArgumentException;
@@ -15,6 +16,7 @@ class SyncWordpressThemesAction
 {
     public function __construct(
         private readonly WordpressThemeParser $parser,
+        private readonly WordpressVersionParser $versionParser,
         private readonly SsrfGuard $ssrfGuard,
         private readonly MonitorSettings $settings,
     ) {}
@@ -64,12 +66,26 @@ class SyncWordpressThemesAction
 
             $monitor->wordpress_theme = $theme?->displayName();
             $monitor->wordpress_theme_slug = $theme?->slug;
+            $monitor->wordpress_version = $this->detectVersion($monitor, $html, $theme !== null);
             $monitor->wordpress_theme_checked_at = now();
             $monitor->save();
             $result['updated']++;
         }
 
         return $result;
+    }
+
+    private function detectVersion(Monitor $monitor, string $html, bool $looksLikeWordpress): ?string
+    {
+        $version = $this->versionParser->fromHtml($html);
+
+        if ($version !== null || ! $looksLikeWordpress) {
+            return $version;
+        }
+
+        $feed = $this->fetch($monitor, rtrim($monitor->url, '/').'/feed/');
+
+        return $feed !== null ? $this->versionParser->fromFeed($feed) : null;
     }
 
     private function withStylesheetName(Monitor $monitor, WordpressTheme $theme): WordpressTheme

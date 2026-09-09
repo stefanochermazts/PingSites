@@ -30,7 +30,7 @@ class SyncWordpressThemesCommandTest extends TestCase
 
         Http::fake([
             'https://cliente.example' => Http::response(
-                '<body class="wp-theme-hello-elementor"><link rel="stylesheet" href="https://cliente.example/wp-content/themes/hello-elementor/style.css"></body>',
+                '<meta name="generator" content="WordPress 6.7.2"><body class="wp-theme-hello-elementor"><link rel="stylesheet" href="https://cliente.example/wp-content/themes/hello-elementor/style.css"></body>',
                 200,
             ),
             'https://cliente.example/wp-content/themes/hello-elementor/style.css' => Http::response(
@@ -49,17 +49,20 @@ class SyncWordpressThemesCommandTest extends TestCase
 
         $this->assertSame('Hello Elementor', $wordpress->fresh()->wordpress_theme);
         $this->assertSame('hello-elementor', $wordpress->fresh()->wordpress_theme_slug);
+        $this->assertSame('6.7.2', $wordpress->fresh()->wordpress_version);
         $this->assertNotNull($wordpress->fresh()->wordpress_theme_checked_at);
         $this->assertNull($plain->fresh()->wordpress_theme);
+        $this->assertNull($plain->fresh()->wordpress_version);
         $this->assertNotNull($plain->fresh()->wordpress_theme_checked_at);
         $this->assertNull($other->fresh()->wordpress_theme);
+        $this->assertNull($other->fresh()->wordpress_version);
         $this->assertNull($other->fresh()->wordpress_theme_checked_at);
     }
 
     public function test_keeps_previous_theme_when_site_request_fails(): void
     {
         $publimedia = $this->publimediaPage();
-        $monitor = $this->monitor($publimedia, 'Sito WP', 'https://cliente.example', 'Divi', 'divi');
+        $monitor = $this->monitor($publimedia, 'Sito WP', 'https://cliente.example', 'Divi', 'divi', '6.4.3');
 
         Http::fake([
             'https://cliente.example' => Http::response('down', 500),
@@ -70,6 +73,7 @@ class SyncWordpressThemesCommandTest extends TestCase
 
         $this->assertSame('Divi', $monitor->fresh()->wordpress_theme);
         $this->assertSame('divi', $monitor->fresh()->wordpress_theme_slug);
+        $this->assertSame('6.4.3', $monitor->fresh()->wordpress_version);
         $this->assertNull($monitor->fresh()->wordpress_theme_checked_at);
     }
 
@@ -89,6 +93,7 @@ class SyncWordpressThemesCommandTest extends TestCase
         string $url,
         ?string $theme = null,
         ?string $themeSlug = null,
+        ?string $version = null,
     ): Monitor {
         return Monitor::query()->create([
             'name' => $name,
@@ -102,6 +107,7 @@ class SyncWordpressThemesCommandTest extends TestCase
             'verify_ssl' => true,
             'wordpress_theme' => $theme,
             'wordpress_theme_slug' => $themeSlug,
+            'wordpress_version' => $version,
         ]);
     }
 }

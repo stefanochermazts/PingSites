@@ -39,6 +39,22 @@
                             </nav>
                         </div>
                     @endif
+                    @if(!empty($theme_filters))
+                        <div class="status-filterbank">
+                            <p class="status-filterbank__label" id="filtro-tema-label">Tema</p>
+                            <nav class="status-chips" aria-labelledby="filtro-tema-label">
+                                @include('status.partials.filter-chips', ['filters' => $theme_filters])
+                            </nav>
+                        </div>
+                    @endif
+                    @if(!empty($version_filters))
+                        <div class="status-filterbank">
+                            <p class="status-filterbank__label" id="filtro-versione-label">Versione</p>
+                            <nav class="status-chips" aria-labelledby="filtro-versione-label">
+                                @include('status.partials.filter-chips', ['filters' => $version_filters])
+                            </nav>
+                        </div>
+                    @endif
                 </div>
             </div>
             <div class="status-table-wrap">
@@ -52,6 +68,9 @@
                             @endif
                             @if(!empty($shows_wordpress_theme))
                                 <th>Tema</th>
+                            @endif
+                            @if(!empty($shows_wordpress_version))
+                                <th>Versione</th>
                             @endif
                             @include('status.partials.sort-header', ['key' => 'controllo', 'hide' => 'sm', 'label' => 'Ultimo controllo'])
                             @include('status.partials.sort-header', ['key' => 'risposta', 'hide' => 'md', 'label' => 'Risposta'])
@@ -115,12 +134,41 @@
                                 @if(!empty($shows_wordpress_theme))
                                     <td>
                                         @if(!empty($monitor['wordpress_theme']))
-                                            <span
+                                            <a
+                                                href="{{ route('status.show', array_filter([
+                                                    'statusPage' => $status_page['slug'],
+                                                    'status' => $status_filter ?? null,
+                                                    'pubblicazione' => $publication_filter ?? null,
+                                                    'tema' => $monitor['wordpress_theme_slug'],
+                                                    'versione' => $version_filter ?? null,
+                                                    'ordina' => $sort ?? null,
+                                                    'dir' => $sort_direction ?? null,
+                                                ])) }}"
                                                 class="status-theme"
                                                 @if(!empty($monitor['wordpress_theme_slug']))
                                                     title="{{ $monitor['wordpress_theme_slug'] }}"
                                                 @endif
-                                            >{{ $monitor['wordpress_theme'] }}</span>
+                                            >{{ $monitor['wordpress_theme'] }}</a>
+                                        @else
+                                            <span class="is-empty">—</span>
+                                        @endif
+                                    </td>
+                                @endif
+                                @if(!empty($shows_wordpress_version))
+                                    <td>
+                                        @if(!empty($monitor['wordpress_version']))
+                                            <a
+                                                href="{{ route('status.show', array_filter([
+                                                    'statusPage' => $status_page['slug'],
+                                                    'status' => $status_filter ?? null,
+                                                    'pubblicazione' => $publication_filter ?? null,
+                                                    'tema' => $theme_filter ?? null,
+                                                    'versione' => $monitor['wordpress_version'],
+                                                    'ordina' => $sort ?? null,
+                                                    'dir' => $sort_direction ?? null,
+                                                ])) }}"
+                                                class="status-version"
+                                            >{{ $monitor['wordpress_version'] }}</a>
                                         @else
                                             <span class="is-empty">—</span>
                                         @endif
@@ -163,8 +211,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ 6 + (!empty($shows_infection) ? 1 : 0) + (!empty($shows_wordpress_theme) ? 1 : 0) }}" class="is-empty">
-                                    {{ !empty($status_filter) ? 'Nessun servizio con questo stato.' : 'Nessun servizio in questa pagina.' }}
+                                <td colspan="{{ 6 + (!empty($shows_infection) ? 1 : 0) + (!empty($shows_wordpress_theme) ? 1 : 0) + (!empty($shows_wordpress_version) ? 1 : 0) }}" class="is-empty">
+                                    {{ !empty($status_filter) || !empty($publication_filter) || !empty($theme_filter) || !empty($version_filter) ? 'Nessun servizio con questi filtri.' : 'Nessun servizio in questa pagina.' }}
                                 </td>
                             </tr>
                         @endforelse

@@ -68,6 +68,7 @@ class StatusPageService
             'overall_status_label' => $this->overallStatusLabel($monitors, $maintenances),
             'shows_infection' => $statusPage->showsInfectionStatus(),
             'shows_wordpress_theme' => $statusPage->showsWordpressTheme(),
+            'shows_wordpress_version' => $statusPage->showsWordpressVersion(),
             'monitors' => $monitors->map(function (Monitor $monitor) use ($recentChecksByMonitor, $statusPage) {
                 $checks = $recentChecksByMonitor->get($monitor->id, collect());
                 $stats = $this->checkStats($checks);
@@ -87,6 +88,7 @@ class StatusPageService
                         : null,
                     'wordpress_theme' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme : null,
                     'wordpress_theme_slug' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme_slug : null,
+                    'wordpress_version' => $statusPage->showsWordpressVersion() ? $monitor->wordpress_version : null,
                     'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                     'last_response_time_ms' => $monitor->last_response_time_ms,
                     'uptime_percent' => $stats['uptime_percent'],
@@ -147,8 +149,10 @@ class StatusPageService
                 'last_checked_at' => DisplayDate::isoFromModel($monitor, 'last_checked_at'),
                 'last_response_time_ms' => $monitor->last_response_time_ms,
                 'wordpress_theme' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme : null,
+                'wordpress_version' => $statusPage->showsWordpressVersion() ? $monitor->wordpress_version : null,
             ],
             'shows_wordpress_theme' => $statusPage->showsWordpressTheme(),
+            'shows_wordpress_version' => $statusPage->showsWordpressVersion(),
             'stats' => $stats,
             'checks' => $checks->map(fn (Check $check) => $this->publicCheckPayload($check))->values()->all(),
             'chart' => [
@@ -189,6 +193,8 @@ class StatusPageService
         ?string $publication = null,
         ?string $sort = null,
         ?string $direction = null,
+        ?string $theme = null,
+        ?string $version = null,
     ): array {
         $allowedStatus = ['operational', 'down', 'maintenance', 'unknown'];
         if ($statusPage->showsInfectionStatus()) {
@@ -201,59 +207,60 @@ class StatusPageService
             ? $publication
             : null;
 
+        $activeTheme = $statusPage->showsWordpressTheme() ? $this->normalizeThemeFilter($theme) : null;
+        $activeVersion = $statusPage->showsWordpressVersion() ? $this->normalizeVersionFilter($version) : null;
+
         $allowedSort = ['controllo', 'risposta', 'disponibilita'];
         $activeSort = is_string($sort) && in_array($sort, $allowedSort, true) ? $sort : null;
         $activeDirection = $activeSort !== null && $direction === 'asc' ? 'asc' : ($activeSort !== null ? 'desc' : null);
 
+        $query = [
+            'status' => $activeStatus,
+            'publication' => $activePublication,
+            'theme' => $activeTheme,
+            'version' => $activeVersion,
+            'sort' => $activeSort,
+            'direction' => $activeDirection,
+        ];
+
         $monitors = is_array($data['monitors'] ?? null) ? $data['monitors'] : [];
 
-        $matchingStatus = array_values(array_filter(
-            $monitors,
-            fn (array $monitor): bool => $this->matchesStatus($monitor, $activeStatus),
-        ));
-        $matchingPublication = array_values(array_filter(
-            $monitors,
-            fn (array $monitor): bool => $this->matchesPublication($monitor, $activePublication),
-        ));
-
         $data['monitors'] = array_values(array_filter(
-            $matchingPublication,
-            fn (array $monitor): bool => $this->matchesStatus($monitor, $activeStatus),
+            $monitors,
+            fn (array $monitor): bool => $this->matchesListingFilters($monitor, $query),
         ));
-
-        $statusCounts = $this->statusCounts($matchingPublication);
-        $publicationCounts = $this->publicationCounts($matchingStatus);
 
         $data['status_filter'] = $activeStatus;
         $data['publication_filter'] = $activePublication;
+        $data['theme_filter'] = $activeTheme;
+        $data['version_filter'] = $activeVersion;
         $data['sort'] = $activeSort;
         $data['sort_direction'] = $activeDirection;
-        $data['status_filters'] = [
-            $this->filterLink($statusPage, 'Tutti gli stati', $statusCounts['all'], $activeStatus === null, null, $activePublication, $activeSort, $activeDirection),
-            $this->filterLink($statusPage, 'Operativo', $statusCounts['operational'], $activeStatus === 'operational', 'operational', $activePublication, $activeSort, $activeDirection),
-            $this->filterLink($statusPage, 'Problemi rilevati', $statusCounts['down'], $activeStatus === 'down', 'down', $activePublication, $activeSort, $activeDirection),
-            $this->filterLink($statusPage, 'Manutenzione', $statusCounts['maintenance'], $activeStatus === 'maintenance', 'maintenance', $activePublication, $activeSort, $activeDirection),
-            $this->filterLink($statusPage, 'Stato non disponibile', $statusCounts['unknown'], $activeStatus === 'unknown', 'unknown', $activePublication, $activeSort, $activeDirection),
-        ];
-
-        if ($statusPage->showsInfectionStatus()) {
-            $data['status_filters'][] = $this->filterLink(
+        $data['status_filters'] = $this->statusFilterLinks(
+            $statusPage,
+            $this->statusCounts($this->monitorsMatching($monitors, $query, except: 'status')),
+            $query,
+        );
+        $data['publication_filters'] = $this->publicationFilterLinks(
+            $statusPage,
+            $this->publicationCounts($this->monitorsMatching($monitors, $query, except: 'publication')),
+            $query,
+        );
+        $data['theme_filters'] = $statusPage->showsWordpressTheme()
+            ? $this->wordpressThemeFilters(
                 $statusPage,
-                'Infetto',
-                $statusCounts['infected'],
-                $activeStatus === 'infected',
-                'infected',
-                $activePublication,
-                $activeSort,
-                $activeDirection,
-            );
-        }
-        $data['publication_filters'] = [
-            $this->filterLink($statusPage, 'Tutti i servizi', $publicationCounts['all'], $activePublication === null, $activeStatus, null, $activeSort, $activeDirection),
-            $this->filterLink($statusPage, 'Con dominio proprio', $publicationCounts['pubblicati'], $activePublication === 'pubblicati', $activeStatus, 'pubblicati', $activeSort, $activeDirection),
-            $this->filterLink($statusPage, 'Indirizzo temporaneo', $publicationCounts['non-pubblicati'], $activePublication === 'non-pubblicati', $activeStatus, 'non-pubblicati', $activeSort, $activeDirection),
-        ];
-        $data['column_sorts'] = $this->columnSorts($statusPage, $activeStatus, $activePublication, $activeSort, $activeDirection);
+                $this->monitorsMatching($monitors, $query, except: 'theme'),
+                $query,
+            )
+            : [];
+        $data['version_filters'] = $statusPage->showsWordpressVersion()
+            ? $this->wordpressVersionFilters(
+                $statusPage,
+                $this->monitorsMatching($monitors, $query, except: 'version'),
+                $query,
+            )
+            : [];
+        $data['column_sorts'] = $this->columnSorts($statusPage, $query);
         $data['monitors'] = $this->sortMonitors($data['monitors'], $activeSort, $activeDirection);
 
         return $data;
@@ -288,6 +295,106 @@ class StatusPageService
         $isTemporary = CloudwaysAppUrl::isTemporaryCloudwaysUrl($url);
 
         return $publication === 'non-pubblicati' ? $isTemporary : ! $isTemporary;
+    }
+
+    /**
+     * @param  array<string, mixed>  $monitor
+     * @param  array{status: ?string, publication: ?string, theme: ?string, version: ?string, sort: ?string, direction: ?string}  $query
+     */
+    private function matchesListingFilters(array $monitor, array $query, ?string $except = null): bool
+    {
+        if ($except !== 'status' && ! $this->matchesStatus($monitor, $query['status'])) {
+            return false;
+        }
+
+        if ($except !== 'publication' && ! $this->matchesPublication($monitor, $query['publication'])) {
+            return false;
+        }
+
+        if ($except !== 'theme' && ! $this->matchesTheme($monitor, $query['theme'])) {
+            return false;
+        }
+
+        if ($except !== 'version' && ! $this->matchesVersion($monitor, $query['version'])) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $monitors
+     * @param  array{status: ?string, publication: ?string, theme: ?string, version: ?string, sort: ?string, direction: ?string}  $query
+     * @return list<array<string, mixed>>
+     */
+    private function monitorsMatching(array $monitors, array $query, ?string $except = null): array
+    {
+        return array_values(array_filter(
+            $monitors,
+            fn (array $monitor): bool => $this->matchesListingFilters($monitor, $query, $except),
+        ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $monitor
+     */
+    private function matchesTheme(array $monitor, ?string $theme): bool
+    {
+        if ($theme === null) {
+            return true;
+        }
+
+        $slug = is_string($monitor['wordpress_theme_slug'] ?? null) ? $monitor['wordpress_theme_slug'] : '';
+
+        if ($theme === 'nessuno') {
+            return $slug === '';
+        }
+
+        return strcasecmp($slug, $theme) === 0;
+    }
+
+    /**
+     * @param  array<string, mixed>  $monitor
+     */
+    private function matchesVersion(array $monitor, ?string $version): bool
+    {
+        if ($version === null) {
+            return true;
+        }
+
+        $value = is_string($monitor['wordpress_version'] ?? null) ? $monitor['wordpress_version'] : '';
+
+        if ($version === 'nessuno') {
+            return $value === '';
+        }
+
+        return $value === $version;
+    }
+
+    private function normalizeThemeFilter(?string $theme): ?string
+    {
+        if (! is_string($theme) || $theme === '') {
+            return null;
+        }
+
+        if ($theme === 'nessuno' || preg_match('/^[A-Za-z0-9._-]+$/', $theme) === 1) {
+            return $theme;
+        }
+
+        return null;
+    }
+
+    private function normalizeVersionFilter(?string $version): ?string
+    {
+        if (! is_string($version) || $version === '') {
+            return null;
+        }
+
+        if ($version === 'nessuno' || preg_match('/^\d+\.\d+(?:\.\d+)?$/', $version) === 1) {
+            return $version;
+        }
+
+        return null;
     }
 
     /**
@@ -344,6 +451,158 @@ class StatusPageService
     }
 
     /**
+     * @param  array{all: int, operational: int, down: int, maintenance: int, unknown: int, infected: int}  $counts
+     * @param  array{status: ?string, publication: ?string, theme: ?string, version: ?string, sort: ?string, direction: ?string}  $query
+     * @return list<array{label: string, count: int, active: bool, url: string}>
+     */
+    private function statusFilterLinks(StatusPage $statusPage, array $counts, array $query): array
+    {
+        $filters = [
+            $this->filterLink($statusPage, 'Tutti gli stati', $counts['all'], $query['status'] === null, ['status' => null] + $query),
+            $this->filterLink($statusPage, 'Operativo', $counts['operational'], $query['status'] === 'operational', ['status' => 'operational'] + $query),
+            $this->filterLink($statusPage, 'Problemi rilevati', $counts['down'], $query['status'] === 'down', ['status' => 'down'] + $query),
+            $this->filterLink($statusPage, 'Manutenzione', $counts['maintenance'], $query['status'] === 'maintenance', ['status' => 'maintenance'] + $query),
+            $this->filterLink($statusPage, 'Stato non disponibile', $counts['unknown'], $query['status'] === 'unknown', ['status' => 'unknown'] + $query),
+        ];
+
+        if ($statusPage->showsInfectionStatus()) {
+            $filters[] = $this->filterLink(
+                $statusPage,
+                'Infetto',
+                $counts['infected'],
+                $query['status'] === 'infected',
+                ['status' => 'infected'] + $query,
+            );
+        }
+
+        return $filters;
+    }
+
+    /**
+     * @param  array{all: int, pubblicati: int, non-pubblicati: int}  $counts
+     * @param  array{status: ?string, publication: ?string, theme: ?string, version: ?string, sort: ?string, direction: ?string}  $query
+     * @return list<array{label: string, count: int, active: bool, url: string}>
+     */
+    private function publicationFilterLinks(StatusPage $statusPage, array $counts, array $query): array
+    {
+        return [
+            $this->filterLink($statusPage, 'Tutti i servizi', $counts['all'], $query['publication'] === null, ['publication' => null] + $query),
+            $this->filterLink($statusPage, 'Con dominio proprio', $counts['pubblicati'], $query['publication'] === 'pubblicati', ['publication' => 'pubblicati'] + $query),
+            $this->filterLink($statusPage, 'Indirizzo temporaneo', $counts['non-pubblicati'], $query['publication'] === 'non-pubblicati', ['publication' => 'non-pubblicati'] + $query),
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $monitors
+     * @param  array{status: ?string, publication: ?string, theme: ?string, version: ?string, sort: ?string, direction: ?string}  $query
+     * @return list<array{label: string, count: int, active: bool, url: string}>
+     */
+    private function wordpressThemeFilters(StatusPage $statusPage, array $monitors, array $query): array
+    {
+        $groups = [];
+        $missing = 0;
+
+        foreach ($monitors as $monitor) {
+            $slug = is_string($monitor['wordpress_theme_slug'] ?? null) ? $monitor['wordpress_theme_slug'] : '';
+            if ($slug === '') {
+                $missing++;
+
+                continue;
+            }
+
+            $key = strtolower($slug);
+            $label = is_string($monitor['wordpress_theme'] ?? null) && $monitor['wordpress_theme'] !== ''
+                ? $monitor['wordpress_theme']
+                : $slug;
+            $groups[$key] ??= ['slug' => $slug, 'label' => $label, 'count' => 0];
+            $groups[$key]['count']++;
+        }
+
+        uasort($groups, function (array $left, array $right): int {
+            return $right['count'] <=> $left['count']
+                ?: strcasecmp($left['label'], $right['label']);
+        });
+
+        $filters = [
+            $this->filterLink($statusPage, 'Tutti i temi', count($monitors), $query['theme'] === null, ['theme' => null] + $query),
+        ];
+
+        foreach ($groups as $group) {
+            $filters[] = $this->filterLink(
+                $statusPage,
+                $group['label'],
+                $group['count'],
+                is_string($query['theme']) && strcasecmp($query['theme'], $group['slug']) === 0,
+                ['theme' => $group['slug']] + $query,
+            );
+        }
+
+        if ($missing > 0) {
+            $filters[] = $this->filterLink(
+                $statusPage,
+                'Senza tema',
+                $missing,
+                $query['theme'] === 'nessuno',
+                ['theme' => 'nessuno'] + $query,
+            );
+        }
+
+        return $filters;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $monitors
+     * @param  array{status: ?string, publication: ?string, theme: ?string, version: ?string, sort: ?string, direction: ?string}  $query
+     * @return list<array{label: string, count: int, active: bool, url: string}>
+     */
+    private function wordpressVersionFilters(StatusPage $statusPage, array $monitors, array $query): array
+    {
+        $groups = [];
+        $missing = 0;
+
+        foreach ($monitors as $monitor) {
+            $version = is_string($monitor['wordpress_version'] ?? null) ? $monitor['wordpress_version'] : '';
+            if ($version === '') {
+                $missing++;
+
+                continue;
+            }
+
+            $groups[$version] ??= ['label' => $version, 'count' => 0];
+            $groups[$version]['count']++;
+        }
+
+        uksort($groups, fn (string $left, string $right): int => version_compare($right, $left));
+
+        $filters = [
+            $this->filterLink($statusPage, 'Tutte le versioni', count($monitors), $query['version'] === null, ['version' => null] + $query),
+        ];
+
+        foreach ($groups as $version => $group) {
+            $filters[] = $this->filterLink(
+                $statusPage,
+                $group['label'],
+                $group['count'],
+                $query['version'] === $version,
+                ['version' => $version] + $query,
+            );
+        }
+
+        if ($missing > 0) {
+            $filters[] = $this->filterLink(
+                $statusPage,
+                'Senza versione',
+                $missing,
+                $query['version'] === 'nessuno',
+                ['version' => 'nessuno'] + $query,
+            );
+        }
+
+        return $filters;
+    }
+
+    /**
+     * @param  array{status?: ?string, publication?: ?string, theme?: ?string, version?: ?string, sort?: ?string, direction?: ?string}  $query
      * @return array{label: string, count: int, active: bool, url: string}
      */
     private function filterLink(
@@ -351,29 +610,22 @@ class StatusPageService
         string $label,
         int $count,
         bool $active,
-        ?string $status,
-        ?string $publication,
-        ?string $sort = null,
-        ?string $direction = null,
+        array $query,
     ): array {
         return [
             'label' => $label,
             'count' => $count,
             'active' => $active,
-            'url' => $this->listingUrl($statusPage, $status, $publication, $sort, $direction),
+            'url' => $this->listingUrl($statusPage, $query),
         ];
     }
 
     /**
+     * @param  array{status: ?string, publication: ?string, theme: ?string, version: ?string, sort: ?string, direction: ?string}  $query
      * @return array<string, array{label: string, url: string, active: bool, aria_sort: string}>
      */
-    private function columnSorts(
-        StatusPage $statusPage,
-        ?string $status,
-        ?string $publication,
-        ?string $sort,
-        ?string $direction,
-    ): array {
+    private function columnSorts(StatusPage $statusPage, array $query): array
+    {
         $columns = [
             'controllo' => 'Ultimo controllo',
             'risposta' => 'Risposta',
@@ -382,15 +634,15 @@ class StatusPageService
 
         $headers = [];
         foreach ($columns as $key => $label) {
-            $active = $sort === $key;
-            $nextDirection = $active && $direction === 'desc' ? 'asc' : 'desc';
+            $active = $query['sort'] === $key;
+            $nextDirection = $active && $query['direction'] === 'desc' ? 'asc' : 'desc';
 
             $headers[$key] = [
                 'label' => $label,
-                'url' => $this->listingUrl($statusPage, $status, $publication, $key, $nextDirection),
+                'url' => $this->listingUrl($statusPage, ['sort' => $key, 'direction' => $nextDirection] + $query),
                 'active' => $active,
                 'aria_sort' => $active
-                    ? ($direction === 'asc' ? 'ascending' : 'descending')
+                    ? ($query['direction'] === 'asc' ? 'ascending' : 'descending')
                     : 'none',
             ];
         }
@@ -455,23 +707,28 @@ class StatusPageService
         return $timestamp === false ? null : $timestamp;
     }
 
-    private function listingUrl(
-        StatusPage $statusPage,
-        ?string $status,
-        ?string $publication,
-        ?string $sort,
-        ?string $direction,
-    ): string {
+    /**
+     * @param  array{status?: ?string, publication?: ?string, theme?: ?string, version?: ?string, sort?: ?string, direction?: ?string}  $query
+     */
+    private function listingUrl(StatusPage $statusPage, array $query): string
+    {
         $params = ['statusPage' => $statusPage];
-        if ($status !== null) {
-            $params['status'] = $status;
+        $map = [
+            'status' => 'status',
+            'publication' => 'pubblicazione',
+            'theme' => 'tema',
+            'version' => 'versione',
+        ];
+
+        foreach ($map as $key => $param) {
+            if (isset($query[$key]) && is_string($query[$key]) && $query[$key] !== '') {
+                $params[$param] = $query[$key];
+            }
         }
-        if ($publication !== null) {
-            $params['pubblicazione'] = $publication;
-        }
-        if ($sort !== null) {
-            $params['ordina'] = $sort;
-            $params['dir'] = $direction ?? 'desc';
+
+        if (isset($query['sort']) && is_string($query['sort']) && $query['sort'] !== '') {
+            $params['ordina'] = $query['sort'];
+            $params['dir'] = $query['direction'] ?? 'desc';
         }
 
         return route('status.show', $params);

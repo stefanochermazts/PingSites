@@ -314,7 +314,9 @@ class StatusPageTest extends TestCase
             ->assertSee('Sito A')
             ->assertDontSee('Infezione')
             ->assertDontSee('Infetto')
-            ->assertDontSee('Tema');
+            ->assertDontSee('Tema')
+            ->assertDontSee('Versione')
+            ->assertDontSee('Tutti i temi');
     }
 
     public function test_publimedia_status_page_shows_wordpress_theme_column(): void
@@ -337,6 +339,7 @@ class StatusPageTest extends TestCase
             'wordpress_theme' => 'Hello Elementor',
             'wordpress_theme_slug' => 'hello-elementor',
             'wordpress_theme_checked_at' => now(),
+            'wordpress_version' => '6.7.2',
         ]);
 
         Cache::flush();
@@ -344,8 +347,12 @@ class StatusPageTest extends TestCase
         $this->get(route('status.show', $publimedia))
             ->assertOk()
             ->assertSee('Tema')
+            ->assertSee('Versione')
             ->assertSee('Hello Elementor')
-            ->assertSee('Sito Cliente');
+            ->assertSee('6.7.2')
+            ->assertSee('Sito Cliente')
+            ->assertSee('Tutti i temi')
+            ->assertSee('Tutte le versioni');
 
         Cache::flush();
 
@@ -354,7 +361,111 @@ class StatusPageTest extends TestCase
         $this->get(route('status.monitor', [$publimedia, $monitor]))
             ->assertOk()
             ->assertSee('Tema')
-            ->assertSee('Hello Elementor');
+            ->assertSee('Hello Elementor')
+            ->assertSee('Versione')
+            ->assertSee('6.7.2');
+    }
+
+    public function test_publimedia_status_page_can_filter_by_theme_and_version(): void
+    {
+        $publimedia = StatusPage::query()->create([
+            'name' => 'Publimedia',
+            'title' => 'Publimedia Status',
+            'slug' => 'publimedia',
+            'is_default' => false,
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Hello',
+            'url' => 'https://hello.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Sito Hello',
+            'valid_status_codes' => [200],
+            'wordpress_theme' => 'Hello Elementor',
+            'wordpress_theme_slug' => 'hello-elementor',
+            'wordpress_version' => '6.7.2',
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Divi',
+            'url' => 'https://divi.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Sito Divi',
+            'valid_status_codes' => [200],
+            'wordpress_theme' => 'Divi',
+            'wordpress_theme_slug' => 'divi',
+            'wordpress_version' => '6.4.3',
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', $publimedia))
+            ->assertOk()
+            ->assertSee('Sito Hello')
+            ->assertSee('Sito Divi')
+            ->assertSee('href="'.route('status.show', ['statusPage' => $publimedia, 'tema' => 'hello-elementor']).'"', false)
+            ->assertSee('href="'.route('status.show', ['statusPage' => $publimedia, 'versione' => '6.7.2']).'"', false);
+
+        $this->get(route('status.show', ['statusPage' => $publimedia, 'tema' => 'hello-elementor']))
+            ->assertOk()
+            ->assertSee('Sito Hello')
+            ->assertDontSee('Sito Divi');
+
+        $this->get(route('status.show', ['statusPage' => $publimedia, 'versione' => '6.4.3']))
+            ->assertOk()
+            ->assertSee('Sito Divi')
+            ->assertDontSee('Sito Hello');
+
+        $this->get(route('status.show', [
+            'statusPage' => $publimedia,
+            'tema' => 'hello-elementor',
+            'versione' => '6.4.3',
+        ]))
+            ->assertOk()
+            ->assertDontSee('Sito Hello')
+            ->assertDontSee('Sito Divi')
+            ->assertSee('Nessun servizio con questi filtri.');
+    }
+
+    public function test_publimedia_status_page_ignores_invalid_theme_and_version_filters(): void
+    {
+        $publimedia = StatusPage::query()->create([
+            'name' => 'Publimedia',
+            'title' => 'Publimedia Status',
+            'slug' => 'publimedia',
+            'is_default' => false,
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Sito Hello',
+            'url' => 'https://hello.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Sito Hello',
+            'valid_status_codes' => [200],
+            'wordpress_theme' => 'Hello Elementor',
+            'wordpress_theme_slug' => 'hello-elementor',
+            'wordpress_version' => '6.7.2',
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', ['statusPage' => $publimedia, 'tema' => 'not a theme']))
+            ->assertOk()
+            ->assertSee('Sito Hello');
+
+        $this->get(route('status.show', ['statusPage' => $publimedia, 'versione' => 'latest']))
+            ->assertOk()
+            ->assertSee('Sito Hello');
+
+        $this->get('/status/'.$publimedia->slug.'?tema[]=hello-elementor&versione[]=6.7.2')
+            ->assertOk()
+            ->assertSee('Sito Hello');
     }
 
     public function test_status_page_lists_monitors_for_selected_page_only(): void

@@ -51,6 +51,7 @@ class Monitor extends Model
         'infection_checked_at',
         'wordpress_theme',
         'wordpress_theme_slug',
+        'wordpress_version',
         'wordpress_theme_checked_at',
     ];
 

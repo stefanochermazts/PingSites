@@ -9,13 +9,13 @@ class SyncWordpressThemesCommand extends Command
 {
     protected $signature = 'monitors:sync-themes';
 
-    protected $description = 'Rileva il tema WordPress attivo dei siti Publimedia';
+    protected $description = 'Rileva tema e versione WordPress dei siti Publimedia';
 
     public function handle(SyncWordpressThemesAction $sync): int
     {
         $result = $sync->handle();
 
-        $this->info("Aggiornati {$result['updated']} tema/i WordPress.");
+        $this->info("Aggiornati {$result['updated']} sito/i (tema e versione WordPress).");
 
         if ($result['skipped'] > 0) {
             $this->warn("Saltati {$result['skipped']} monitor senza URL.");
