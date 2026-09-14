@@ -231,6 +231,7 @@ class StatusPageTest extends TestCase
             'infection_count' => 829,
             'infection_db_count' => 2,
             'infection_checked_at' => now(),
+            'infection_detected_at' => now()->subDays(3),
         ]);
 
         Cache::flush();
@@ -238,10 +239,12 @@ class StatusPageTest extends TestCase
         $this->get(route('status.show', $publimedia))
             ->assertOk()
             ->assertSee('Infezione')
+            ->assertSee('Rilevata')
             ->assertSee('Infetto')
             ->assertSee('829 file')
             ->assertSee('2 DB')
-            ->assertSee('Sito Cliente');
+            ->assertSee('Sito Cliente')
+            ->assertSee('ordina=rilevazione', false);
     }
 
     public function test_publimedia_status_page_can_filter_infected_monitors(): void
@@ -291,6 +294,63 @@ class StatusPageTest extends TestCase
             ->assertDontSee('Sito Pulito');
     }
 
+    public function test_publimedia_status_page_can_sort_infected_monitors_by_detection_date(): void
+    {
+        $publimedia = StatusPage::query()->create([
+            'name' => 'Publimedia',
+            'title' => 'Publimedia Status',
+            'slug' => 'publimedia',
+            'is_default' => false,
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Infezione Vecchia',
+            'url' => 'https://old-infected.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Infezione Vecchia',
+            'valid_status_codes' => [200],
+            'is_infected' => true,
+            'infection_detected_at' => now()->subDays(10),
+        ]);
+
+        Monitor::query()->create([
+            'name' => 'Infezione Recente',
+            'url' => 'https://new-infected.example',
+            'status' => MonitorStatus::Online,
+            'published' => true,
+            'status_page_id' => $publimedia->id,
+            'public_name' => 'Infezione Recente',
+            'valid_status_codes' => [200],
+            'is_infected' => true,
+            'infection_detected_at' => now()->subHour(),
+        ]);
+
+        Cache::flush();
+
+        $this->get(route('status.show', [
+            'statusPage' => $publimedia,
+            'status' => 'infected',
+            'ordina' => 'rilevazione',
+            'dir' => 'desc',
+        ]))
+            ->assertOk()
+            ->assertSeeInOrder(['Infezione Recente', 'Infezione Vecchia'])
+            ->assertSee('status=infected', false)
+            ->assertSee('ordina=rilevazione', false)
+            ->assertSee('dir=asc', false);
+
+        $this->get(route('status.show', [
+            'statusPage' => $publimedia,
+            'status' => 'infected',
+            'ordina' => 'rilevazione',
+            'dir' => 'asc',
+        ]))
+            ->assertOk()
+            ->assertSeeInOrder(['Infezione Vecchia', 'Infezione Recente']);
+    }
+
     public function test_other_status_pages_do_not_show_infection_column(): void
     {
         $statusPage = $this->defaultStatusPage();
@@ -313,6 +373,7 @@ class StatusPageTest extends TestCase
             ->assertOk()
             ->assertSee('Sito A')
             ->assertDontSee('Infezione')
+            ->assertDontSee('Rilevata')
             ->assertDontSee('Infetto')
             ->assertDontSee('Tema')
             ->assertDontSee('Versione')

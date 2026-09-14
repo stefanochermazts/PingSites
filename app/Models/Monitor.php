@@ -49,6 +49,7 @@ class Monitor extends Model
         'infection_count',
         'infection_db_count',
         'infection_checked_at',
+        'infection_detected_at',
         'wordpress_theme',
         'wordpress_theme_slug',
         'wordpress_version',
@@ -70,6 +71,7 @@ class Monitor extends Model
             'infection_count' => 'integer',
             'infection_db_count' => 'integer',
             'infection_checked_at' => 'datetime',
+            'infection_detected_at' => 'datetime',
             'wordpress_theme_checked_at' => 'datetime',
         ];
     }

@@ -7,6 +7,7 @@ use App\Models\StatusPage;
 use App\Services\Cloudways\CloudwaysClient;
 use App\Services\Cloudways\CloudwaysException;
 use App\Services\Cloudways\CloudwaysMalwareStatusCatalog;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -59,6 +60,7 @@ class CheckCloudwaysInfectionsAction
             $monitor->infection_count = $status->files;
             $monitor->infection_db_count = $status->database;
             $monitor->infection_checked_at = now();
+            $monitor->infection_detected_at = $this->detectedAt($monitor, $status->infected);
             $monitor->save();
             $result['updated']++;
         }
@@ -74,6 +76,19 @@ class CheckCloudwaysInfectionsAction
             ->count();
 
         return $result;
+    }
+
+    private function detectedAt(Monitor $monitor, ?bool $infected): ?Carbon
+    {
+        if ($infected === true) {
+            return $monitor->infection_detected_at ?? now();
+        }
+
+        if ($infected === false) {
+            return null;
+        }
+
+        return $monitor->infection_detected_at;
     }
 
     /**

@@ -65,6 +65,7 @@
                             <th>Stato</th>
                             @if(!empty($shows_infection))
                                 <th>Infezione</th>
+                                @include('status.partials.sort-header', ['key' => 'rilevazione', 'label' => 'Rilevata'])
                             @endif
                             @if(!empty($shows_wordpress_theme))
                                 <th>Tema</th>
@@ -126,6 +127,15 @@
                                             </div>
                                         @elseif($monitor['is_infected'] === false)
                                             <span class="status-muted">{{ $monitor['infection_label'] }}</span>
+                                        @else
+                                            <span class="is-empty">—</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if(!empty($monitor['infection_detected_at']))
+                                            <span title="{{ DisplayDate::format($monitor['infection_detected_at'], 'd/m/Y H:i:s') }}">
+                                                {{ DisplayDate::format($monitor['infection_detected_at'], 'd/m/Y H:i') }}
+                                            </span>
                                         @else
                                             <span class="is-empty">—</span>
                                         @endif
@@ -211,7 +221,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ 6 + (!empty($shows_infection) ? 1 : 0) + (!empty($shows_wordpress_theme) ? 1 : 0) + (!empty($shows_wordpress_version) ? 1 : 0) }}" class="is-empty">
+                                <td colspan="{{ 6 + (!empty($shows_infection) ? 2 : 0) + (!empty($shows_wordpress_theme) ? 1 : 0) + (!empty($shows_wordpress_version) ? 1 : 0) }}" class="is-empty">
                                     {{ !empty($status_filter) || !empty($publication_filter) || !empty($theme_filter) || !empty($version_filter) ? 'Nessun servizio con questi filtri.' : 'Nessun servizio in questa pagina.' }}
                                 </td>
                             </tr>

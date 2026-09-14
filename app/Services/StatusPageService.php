@@ -86,6 +86,9 @@ class StatusPageService
                     'infection_label' => $statusPage->showsInfectionStatus()
                         ? $this->infectionLabel($monitor->isInfected())
                         : null,
+                    'infection_detected_at' => $statusPage->showsInfectionStatus()
+                        ? DisplayDate::isoFromModel($monitor, 'infection_detected_at')
+                        : null,
                     'wordpress_theme' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme : null,
                     'wordpress_theme_slug' => $statusPage->showsWordpressTheme() ? $monitor->wordpress_theme_slug : null,
                     'wordpress_version' => $statusPage->showsWordpressVersion() ? $monitor->wordpress_version : null,
@@ -211,6 +214,9 @@ class StatusPageService
         $activeVersion = $statusPage->showsWordpressVersion() ? $this->normalizeVersionFilter($version) : null;
 
         $allowedSort = ['controllo', 'risposta', 'disponibilita'];
+        if ($statusPage->showsInfectionStatus()) {
+            $allowedSort[] = 'rilevazione';
+        }
         $activeSort = is_string($sort) && in_array($sort, $allowedSort, true) ? $sort : null;
         $activeDirection = $activeSort !== null && $direction === 'asc' ? 'asc' : ($activeSort !== null ? 'desc' : null);
 
@@ -632,6 +638,10 @@ class StatusPageService
             'disponibilita' => 'Disponibilità',
         ];
 
+        if ($statusPage->showsInfectionStatus()) {
+            $columns = ['rilevazione' => 'Rilevata'] + $columns;
+        }
+
         $headers = [];
         foreach ($columns as $key => $label) {
             $active = $query['sort'] === $key;
@@ -686,6 +696,7 @@ class StatusPageService
     {
         return match ($sort) {
             'controllo' => $this->timestampValue($monitor['last_checked_at'] ?? null),
+            'rilevazione' => $this->timestampValue($monitor['infection_detected_at'] ?? null),
             'risposta' => is_numeric($monitor['last_response_time_ms'] ?? null)
                 ? (float) $monitor['last_response_time_ms']
                 : null,
