@@ -779,12 +779,19 @@ class StatusPageService
             return collect();
         }
 
-        return Check::query()
-            ->whereIn('monitor_id', $monitorIds)
-            ->orderByDesc('checked_at')
-            ->get()
-            ->groupBy('monitor_id')
-            ->map(fn (Collection $checks) => $checks->take(self::RECENT_CHECKS_LIMIT)->values());
+        return $monitorIds
+            ->unique()
+            ->mapWithKeys(function (mixed $monitorId): array {
+                $id = (int) $monitorId;
+
+                return [
+                    $id => Check::query()
+                        ->where('monitor_id', $id)
+                        ->orderByDesc('checked_at')
+                        ->limit(self::RECENT_CHECKS_LIMIT)
+                        ->get(),
+                ];
+            });
     }
 
     /**
